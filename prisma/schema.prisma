@@ -17,6 +17,7 @@ model User {
   username          String   @unique
   passwordHash      String
   isActive          Boolean  @default(true)
+  isEmailVerified   Boolean  @default(false)
   lastLogin         DateTime?
 
   recoveryToken     String?
@@ -29,6 +30,24 @@ model User {
   employee          Employee?
   patient           Patient?
   auditLogs         AuditLog[]
+  emailVerifications EmailVerification[]
+}
+
+model EmailVerification {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  code      String    @db.Char(4)
+  attempts  Int       @default(0)
+  maxAttempts Int     @default(3)
+  expiresAt DateTime
+  isUsed    Boolean   @default(false)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, isUsed])
+  @@index([expiresAt])
 }
 
 model Role {
