@@ -1,0 +1,27 @@
+nano ecosystem.config.js
+
+
+
+
+pm2 start ecosystem.config.js
+
+module.exports = {
+  apps: [
+    {
+      name: "nest-app",
+      script: "dist/src/main.js",
+      env: {
+        NODE_ENV: "production",
+        PORT: 3000,
+        DATABASE_URL: "mysql://jonwilsondb:ejemplo@ecommerce-cys.cna04giu2al5.us-east-2.rds.amazonaws.com:3306/ecommerce_cys",
+        DB_USER: "jonwilsondb",
+        DB_PASSWORD: "ejemplo",
+        DB_HOST: "ecommerce-cys.cna04giu2al5.us-east-2.rds.amazonaws.com",
+        DB_PORT: 3306,
+        DB_NAME: "ecommerce_cys",
+        JWT_SECRET: "super_clave_secreta_segura",
+        JWT_EXPIRES_IN: "1h"
+      }
+    }
+  ]
+};

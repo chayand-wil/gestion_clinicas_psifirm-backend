@@ -1,0 +1,772 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////////////////////////////////
+// 🔐 USUARIOS, ROLES Y PERMISOS
+//////////////////////////////////////////////////////
+
+model User {
+  id                Int      @id @default(autoincrement())
+  email             String   @unique
+  username          String   @unique
+  passwordHash      String
+  isActive          Boolean  @default(true)
+  lastLogin         DateTime?
+
+  recoveryToken     String?
+  recoveryExpiresAt DateTime?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  roles             UserRole[]
+  employee          Employee?
+  patient           Patient?
+  auditLogs         AuditLog[]
+}
+
+model Role {
+  id          Int    @id @default(autoincrement())
+  name        String @unique
+  description String?
+
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          Int    @id @default(autoincrement())
+  name        String @unique
+  module      String
+  description String?
+
+  roles       RolePermission[]
+}
+
+model UserRole {
+  userId Int
+  roleId Int
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId Int
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
+
+//////////////////////////////////////////////////////
+// 🧑‍⚕️ ÁREAS Y EMPLEADOS
+//////////////////////////////////////////////////////
+
+model SpecialtyArea {
+  id          Int     @id @default(autoincrement())
+  name        String @unique
+  description String?
+  isActive    Boolean @default(true)
+
+  employees        Employee[]
+  medicalRecords   MedicalRecord[]
+}
+
+model Employee {
+  id              Int    @id @default(autoincrement())
+  userId          Int    @unique
+  user            User   @relation(fields: [userId], references: [id])
+
+  firstName       String
+  lastName        String
+  licenseNumber   String? @unique
+
+  specialtyAreaId Int
+  specialtyArea   SpecialtyArea @relation(fields: [specialtyAreaId], references: [id])
+
+  contractType    ContractType
+  paymentType     PaymentType
+  baseSalary      Decimal @db.Decimal(10,2)
+  sessionRate     Decimal @db.Decimal(8,2)
+
+  isActive        Boolean @default(true)
+
+  schedules              EmployeeSchedule[]
+  payrolls               Payroll[]
+  medicalRecords         MedicalRecord[]
+  sessions               TherapySession[]
+  prescriptions          Prescription[]
+  prescriptionDeliveries PrescriptionDelivery[]
+  appointments           Appointment[]
+}
+
+model EmployeeSchedule {
+  id         Int     @id @default(autoincrement())
+  employeeId Int
+  dayOfWeek  WeekDay
+  startTime  DateTime
+  endTime    DateTime
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// 🧍 PACIENTES
+//////////////////////////////////////////////////////
+
+model Patient {
+  id             Int     @id @default(autoincrement())
+  userId         Int?    @unique
+  user           User? @relation(fields: [userId], references: [id])
+
+  firstName      String
+  lastName       String
+  birthDate      DateTime
+  gender         Gender
+  civilStatus    CivilStatus
+
+  occupation     String
+  educationLevel EducationLevel
+
+  phone          String
+  email          String?
+  address        String?
+
+  emergencyName         String
+  emergencyPhone        String
+  emergencyRelationship Relationship
+
+  alcoholUse    AlcoholLevel
+  tobaccoUse    TobaccoLevel
+
+  isActive      Boolean @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  medicalRecords MedicalRecord[] // ✅ CAMBIO: Plural - Un paciente puede tener múltiples historias
+  payments       Payment[]
+  appointments   Appointment[]
+}
+
+//////////////////////////////////////////////////////
+// 🧠 HISTORIA CLÍNICA
+//////////////////////////////////////////////////////
+
+model MedicalRecord {
+  id              Int    @id @default(autoincrement())
+  recordNumber    String @unique
+
+  patientId       Int    // ✅ CAMBIO: Sin @unique - Permite múltiples historias por paciente
+  patient         Patient @relation(fields: [patientId], references: [id])
+
+  psychologistId  Int
+  psychologist    Employee @relation(fields: [psychologistId], references: [id])
+
+  specialtyAreaId Int
+  specialtyArea   SpecialtyArea @relation(fields: [specialtyAreaId], references: [id])
+
+  status          RecordStatus
+  isCurrent       Boolean @default(true) // ✅ NUEVO: Indica si es el expediente activo
+  openedAt        DateTime
+  closedAt        DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  initialAssessment     InitialAssessment?
+  diagnoses             Diagnosis[]
+  diagnosisDetail       DiagnosisDetail?
+  sessions              TherapySession[]
+  periodicEvaluations   PeriodicEvaluation[]
+  psychologicalTests    PsychologicalTest[]
+  treatmentPlan         TreatmentPlan?
+  therapeuticDischarge  TherapeuticDischarge?
+  prescriptions         Prescription[]
+
+  @@index([patientId, isCurrent]) // ✅ NUEVO: Índice para búsquedas rápidas
+}
+
+//////////////////////////////////////////////////////
+// 🧠 EVALUACIÓN INICIAL (Secciones 2, 3 y 4 de Plantilla)
+//////////////////////////////////////////////////////
+
+model InitialAssessment {
+  id               Int    @id @default(autoincrement())
+  recordId         Int    @unique
+  record           MedicalRecord @relation(fields: [recordId], references: [id])
+
+  // Sección 2: Procedencia y Motivo
+  referralSource      String
+  consultationReason  String @db.Text
+
+  // Sección 3.1: Antecedentes Familiares
+  familyHistory    String @db.Text
+
+  // Sección 3.2: Historia Personal
+  personalHistory       String @db.Text
+  developmentalHistory  String? @db.Text
+  academicHistory       String? @db.Text
+  medicalHistory        String? @db.Text
+  currentMedication     String? @db.Text
+  drugConsumption       String? @db.Text
+
+  previousTreatment        Boolean @default(false)
+  previousTreatmentDetails String? @db.Text
+
+  hospitalizations        Boolean @default(false)
+  hospitalizationDetails  String? @db.Text
+
+  // Sección 4.1: Estado Actual (Escalas Likert 1-5)
+  moodLevel        Int // 1-5
+  anxietyLevel     Int // 1-5
+  socialFunction   Int // 1-5
+  sleepQuality     Int // 1-5
+  appetite         Int // 1-5
+
+  generalObservations String? @db.Text
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// 🧪 PRUEBAS PSICOLÓGICAS (Sección 4.2)
+//////////////////////////////////////////////////////
+
+model PsychologicalTest {
+  id             Int    @id @default(autoincrement())
+  recordId       Int
+  name           String
+  score          String
+  interpretation String @db.Text
+  appliedAt      DateTime
+  attachmentUrl  String? // Para PDFs/Imágenes de resultados
+
+  createdAt      DateTime @default(now())
+
+  record MedicalRecord @relation(fields: [recordId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// 🧩 DIAGNÓSTICO DETALLADO (Sección 5)
+//////////////////////////////////////////////////////
+
+model Diagnosis {
+  id           Int    @id @default(autoincrement())
+  recordId     Int
+  cie11Code    String
+  type         DiagnosisType
+  description  String @db.Text
+
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  record MedicalRecord @relation(fields: [recordId], references: [id])
+}
+
+model DiagnosisDetail {
+  id               Int    @id @default(autoincrement())
+  recordId         Int    @unique // Solo una evaluación de factores por historia
+
+  predisponentes   String @db.Text
+  precipitantes    String @db.Text
+  mantenedores     String @db.Text
+  functioningLevel Int // 0-100
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  record MedicalRecord @relation(fields: [recordId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// 📋 PLAN DE TRATAMIENTO (Sección 6)
+//////////////////////////////////////////////////////
+
+model TreatmentPlan {
+  id               Int    @id @default(autoincrement())
+  recordId         Int    @unique
+
+  shortTermGoal    String @db.Text
+  mediumTermGoal   String? @db.Text
+  longTermGoal     String? @db.Text
+
+  modality         TherapyModality
+  therapeuticFocus TherapeuticApproach
+  frequency        SessionFrequency
+
+  sessionsPerWeek  Int @default(1)
+  estimatedWeeks   Int?
+  costPerSession   Decimal @db.Decimal(8,2)
+
+  startDate        DateTime @default(now())
+  estimatedEndDate DateTime?
+  isActive         Boolean @default(true)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  record MedicalRecord @relation(fields: [recordId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// 🛋️ SESIONES TERAPÉUTICAS (Sección 7)
+//////////////////////////////////////////////////////
+
+model TherapySession {
+  id            Int    @id @default(autoincrement())
+  recordId      Int
+  employeeId    Int
+
+  sessionNumber Int
+  date          DateTime
+  attended      Boolean
+
+  absenceReason   String? @db.Text // Cuando attended = false
+  interventions   String @db.Text
+  patientResponse String @db.Text
+  assignedTasks   String @db.Text
+  observations    String @db.Text
+
+  nextSessionDate  DateTime?
+  digitalSignature String? @db.Text
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  record       MedicalRecord @relation(fields: [recordId], references: [id])
+  employee     Employee      @relation(fields: [employeeId], references: [id])
+  sessionTags  SessionTag[]  // ✅ NUEVO: Relación con tags
+
+  @@unique([recordId, sessionNumber])
+}
+
+//////////////////////////////////////////////////////
+// 🏷️ SISTEMA DE TAGS PARA TEMAS (NUEVO)
+//////////////////////////////////////////////////////
+
+model Tag {
+  id          Int    @id @default(autoincrement())
+  name        String @unique
+  category    TagCategory
+  description String?
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  sessionTags SessionTag[]
+}
+
+model SessionTag {
+  sessionId Int
+  tagId     Int
+  
+  session TherapySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tag     Tag            @relation(fields: [tagId], references: [id])
+  
+  createdAt DateTime @default(now())
+  
+  @@id([sessionId, tagId])
+  @@index([tagId]) // Para reportes de "sesiones por tema"
+}
+
+enum TagCategory {
+  TEMA           // ej: ansiedad, depresión, duelo
+  INTERVENCION   // ej: reestructuración cognitiva, role-playing
+  EMOCION        // ej: tristeza, ira, alegría
+  SINTOMA        // ej: insomnio, ideación suicida
+  OTRO
+}
+
+//////////////////////////////////////////////////////
+// 📊 EVALUACIONES PERIÓDICAS (Sección 8)
+//////////////////////////////////////////////////////
+
+model PeriodicEvaluation {
+  id               Int    @id @default(autoincrement())
+  recordId         Int
+  type             EvaluationType
+
+  observedProgress String @db.Text
+  achievedGoals    String @db.Text
+  pendingGoals     String @db.Text
+  recommendations  String @db.Text
+
+  progressScale    Int // 1-10 estrellas
+
+  evaluatedAt      DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  record MedicalRecord @relation(fields: [recordId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// 🏁 ALTA TERAPÉUTICA (Sección 9)
+//////////////////////////////////////////////////////
+
+model TherapeuticDischarge {
+  id            Int    @id @default(autoincrement())
+  recordId      Int    @unique
+
+  dischargeDate      DateTime
+  reason             DischargeReason
+  patientStatus      String @db.Text
+  recommendations    String @db.Text
+  followUpPlan       String? @db.Text
+
+  patientSignature   String? @db.Text
+  therapistSignature String @db.Text
+
+  createdAt          DateTime @default(now())
+
+  record MedicalRecord @relation(fields: [recordId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// 💊 INVENTARIO Y PRESCRIPCIONES
+//////////////////////////////////////////////////////
+
+model Product {
+  id            Int    @id @default(autoincrement())
+  code          String @unique
+  name          String
+  stock         Int
+  minStock      Int
+  price         Decimal @db.Decimal(10,2)
+  isMedication  Boolean
+
+  movements     InventoryMovement[]
+  prescriptions Prescription[]
+}
+
+model InventoryMovement {
+  id        Int    @id @default(autoincrement())
+  productId Int
+  type      InventoryMovementType
+  quantity  Int
+  reason    String?
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Prescription {
+  id               Int    @id @default(autoincrement())
+  recordId         Int
+  productId        Int
+  prescribedBy     Int
+
+  dosage           String
+  instructions     String
+
+  prescriptionDate DateTime @default(now())
+  startDate        DateTime
+  endDate          DateTime?
+
+  isActive         Boolean @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  record     MedicalRecord @relation(fields: [recordId], references: [id])
+  product    Product       @relation(fields: [productId], references: [id])
+  doctor     Employee      @relation(fields: [prescribedBy], references: [id])
+  deliveries PrescriptionDelivery[]
+}
+
+model PrescriptionDelivery {
+  id             Int    @id @default(autoincrement())
+  prescriptionId Int
+  deliveredBy    Int
+  quantity       Int
+  deliveredAt    DateTime @default(now())
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id])
+  employee     Employee     @relation(fields: [deliveredBy], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// 💰 CITAS, PAGOS Y FACTURACIÓN
+//////////////////////////////////////////////////////
+
+model Appointment {
+  id          Int      @id @default(autoincrement())
+  patientId   Int
+  employeeId  Int
+  date        DateTime
+  status      AppointmentStatus
+  cost        Decimal @db.Decimal(8,2)
+
+  sessionId   Int? @unique // Vincula con sesión realizada
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  patient  Patient  @relation(fields: [patientId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id])
+}
+
+model Payment {
+  id        Int     @id @default(autoincrement())
+  patientId Int
+  amount    Decimal @db.Decimal(10,2)
+  status    PaymentStatus
+  paidAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id])
+  invoice Invoice?
+}
+
+model Invoice {
+  id        Int    @id @default(autoincrement())
+  number    String @unique
+  paymentId Int    @unique
+
+  issueDate DateTime @default(now())
+  dueDate   DateTime?
+
+  subtotal  Decimal @db.Decimal(10,2)
+  taxes     Decimal @db.Decimal(10,2)
+  total     Decimal @db.Decimal(10,2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payment Payment       @relation(fields: [paymentId], references: [id])
+  items   InvoiceItem[]
+}
+
+model InvoiceItem {
+  id          Int    @id @default(autoincrement())
+  invoiceId   Int
+  description String
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(10,2)
+  total       Decimal @db.Decimal(10,2)
+
+  createdAt   DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// 🧾 NÓMINA
+//////////////////////////////////////////////////////
+
+model Payroll {
+  id            Int      @id @default(autoincrement())
+  employeeId    Int
+  periodStart   DateTime
+  periodEnd     DateTime
+
+  baseSalary    Decimal @db.Decimal(10,2)
+  bonus         Decimal @db.Decimal(10,2)
+  igss          Decimal @db.Decimal(10,2)
+  deductions    Decimal @db.Decimal(10,2)
+  netSalary     Decimal @db.Decimal(10,2)
+
+  status        PayrollStatus
+  paymentDate   DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// 🔒 AUDITORÍA
+//////////////////////////////////////////////////////
+
+model AuditLog {
+  id        Int    @id @default(autoincrement())
+  userId    Int?
+  action    AuditAction
+  entity    String
+  entityId  String?
+  oldData   Json?
+  newData   Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+//////////////////////////////////////////////////////
+// 🔢 ENUMS
+//////////////////////////////////////////////////////
+
+// Pacientes
+enum Gender {
+  MASCULINO
+  FEMENINO
+  NO_BINARIO
+  PREFIERO_NO_ESPECIFICAR
+}
+
+enum CivilStatus {
+  SOLTERO
+  CASADO
+  DIVORCIADO
+  VIUDO
+  UNION_LIBRE
+}
+
+enum EducationLevel {
+  PRIMARIA
+  SECUNDARIA
+  DIVERSIFICADO
+  TECNICO
+  UNIVERSITARIO
+  POSTGRADO
+}
+
+enum Relationship {
+  PADRE
+  MADRE
+  HIJO
+  CONYUGE
+  HERMANO
+  OTRO
+}
+
+enum AlcoholLevel {
+  NINGUNO
+  BAJO
+  MODERADO
+  ALTO
+}
+
+enum TobaccoLevel {
+  NINGUNO
+  BAJO
+  MODERADO
+  ALTO
+}
+
+// Historia Clínica
+enum RecordStatus {
+  ACTIVA
+  CERRADA
+  SUSPENDIDA
+}
+
+enum DiagnosisType {
+  PRINCIPAL
+  SECUNDARIO
+}
+
+enum EvaluationType {
+  INICIAL
+  SEGUIMIENTO
+  FINAL
+}
+
+enum DischargeReason {
+  OBJETIVOS_ALCANZADOS
+  ABANDONO
+  DERIVACION
+  OTRO
+}
+
+// Plan de Tratamiento
+enum TherapyModality {
+  INDIVIDUAL
+  FAMILIAR
+  PAREJA
+  GRUPAL
+}
+
+enum TherapeuticApproach {
+  COGNITIVO_CONDUCTUAL
+  SISTEMICO
+  PSICODINAMICO
+  HUMANISTA
+  INTEGRATIVO
+  OTRO
+}
+
+enum SessionFrequency {
+  SEMANAL
+  QUINCENAL
+  MENSUAL
+  OTRO
+}
+
+// Empleados
+enum ContractType {
+  INDEFINIDO
+  TEMPORAL
+  SERVICIOS
+}
+
+enum PaymentType {
+  MENSUAL
+  POR_SESION
+  MIXTO
+}
+
+enum WeekDay {
+  LUNES
+  MARTES
+  MIERCOLES
+  JUEVES
+  VIERNES
+  SABADO
+  DOMINGO
+}
+
+// Inventario
+enum InventoryMovementType {
+  ENTRADA
+  SALIDA
+  AJUSTE
+  VENCIMIENTO
+}
+
+// Citas y Pagos
+enum AppointmentStatus {
+  PROGRAMADA
+  CONFIRMADA
+  COMPLETADA
+  CANCELADA
+  NO_ASISTIO
+}
+
+enum PaymentStatus {
+  PENDIENTE
+  PAGADO
+  PARCIAL
+  CANCELADO
+}
+
+// Nómina
+enum PayrollStatus {
+  PENDIENTE
+  PAGADO
+  CANCELADO
+}
+
+// Auditoría
+enum AuditAction {
+  INSERT
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  ACCESS
+}

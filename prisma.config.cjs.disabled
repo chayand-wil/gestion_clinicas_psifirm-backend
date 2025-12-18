@@ -1,0 +1,5 @@
+module.exports = {
+  seed: {
+    run: 'ts-node ./prisma/seed.ts',
+  },
+};

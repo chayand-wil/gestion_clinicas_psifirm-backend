@@ -1,0 +1,248 @@
+ -- SQL completo para 'plataforma_reciclaje' (MySQL 8+)
+-- Ajusta el nombre de la base de datos si lo deseas.
+
+DROP DATABASE IF EXISTS plataforma_reciclaje;
+CREATE DATABASE plataforma_reciclaje
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+USE plataforma_reciclaje;
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ---------------------
+-- Catálogos / Referencias
+-- ---------------------
+CREATE TABLE departamento (
+  id_departamento INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(150) NOT NULL,
+  slug VARCHAR(180) UNIQUE,
+  created_at TIMESTAMP NULL DEFAULT NULL,
+  updated_at TIMESTAMP NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE municipio (
+  id_municipio INT AUTO_INCREMENT PRIMARY KEY,
+  departamento_id INT NOT NULL,
+  nombre VARCHAR(150) NOT NULL,
+  slug VARCHAR(180),
+  created_at TIMESTAMP NULL DEFAULT NULL,
+  updated_at TIMESTAMP NULL DEFAULT NULL,
+  FOREIGN KEY (departamento_id) REFERENCES departamento(id_departamento) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE role (
+  id_role INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(60) NOT NULL UNIQUE,
+  descripcion TEXT NULL,
+  created_at TIMESTAMP NULL DEFAULT NULL,
+  updated_at TIMESTAMP NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE categoria (
+  id_categoria INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(120) NOT NULL,
+  slug VARCHAR(150),
+  descripcion TEXT NULL,
+  created_at TIMESTAMP NULL DEFAULT NULL,
+  updated_at TIMESTAMP NULL DEFAULT NULL,
+  UNIQUE KEY ux_categoria_nombre (nombre)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE estado_articulo (
+  id_estado_articulo INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(60) NOT NULL UNIQUE,
+  descripcion TEXT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE medio_tipo (
+  id_medio_tipo INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(30) NOT NULL UNIQUE -- 'imagen', 'video', etc.
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE tag (
+  id_tag INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(80) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------
+-- Tabla de usuarios (anónimos y registrados)
+-- ---------------------
+CREATE TABLE user (
+  id_user BIGINT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(120) NULL,
+  apellido VARCHAR(120) NULL,
+  mail VARCHAR(150) NULL,
+  nit VARCHAR(50) NULL,
+  telefono VARCHAR(40) NULL,
+  municipio_id INT NULL,
+  departamento_id INT NULL,
+  detalle TEXT NULL,
+  is_anonymous BOOLEAN NOT NULL DEFAULT TRUE,
+  token_sesion VARCHAR(200) NULL,
+  password_hash VARCHAR(255) NULL, -- NULL si es anónimo
+  activo BOOLEAN NOT NULL DEFAULT TRUE,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP NULL DEFAULT NULL,
+  UNIQUE KEY ux_user_mail (mail),
+  UNIQUE KEY ux_user_token (token_sesion),
+  INDEX idx_user_municipio (municipio_id),
+  INDEX idx_user_departamento (departamento_id),
+  FOREIGN KEY (municipio_id) REFERENCES municipio(id_municipio) ON DELETE SET NULL,
+  FOREIGN KEY (departamento_id) REFERENCES departamento(id_departamento) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Relación N:M usuarios-roles (un usuario puede tener varios roles)
+CREATE TABLE user_role (
+  id_user BIGINT NOT NULL,
+  id_role INT NOT NULL,
+  PRIMARY KEY (id_user, id_role),
+  FOREIGN KEY (id_user) REFERENCES user(id_user) ON DELETE CASCADE,
+  FOREIGN KEY (id_role) REFERENCES role(id_role) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------
+-- Artículos y multimedia
+-- ---------------------
+CREATE TABLE articulo (
+  id_articulo BIGINT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id BIGINT NULL, -- creador o propietario (puede ser NULL si sistema)
+  nombre VARCHAR(180) NOT NULL,
+  slug VARCHAR(210) NULL,
+  descripcion TEXT NULL,
+  detalles JSON NULL, -- para atributos flexibles (color, peso, dimensiones, reciclabilidad, etc.)
+  precio_compra DECIMAL(12,2) NULL,
+  precio_venta DECIMAL(12,2) NULL,
+  cantidad INT DEFAULT 0,
+  categoria_id INT NULL,
+  estado_id INT NULL, -- FK a estado_articulo
+  visibilidad ENUM('publico','privado','oculto') DEFAULT 'publico',
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP NULL DEFAULT NULL,
+  INDEX idx_articulo_nombre (nombre),
+  INDEX idx_articulo_categoria (categoria_id),
+  FOREIGN KEY (usuario_id) REFERENCES user(id_user) ON DELETE SET NULL,
+  FOREIGN KEY (categoria_id) REFERENCES categoria(id_categoria) ON DELETE SET NULL,
+  FOREIGN KEY (estado_id) REFERENCES estado_articulo(id_estado_articulo) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE articulo_media (
+  id_media BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id_articulo BIGINT NOT NULL,
+  url VARCHAR(1000) NOT NULL, -- puede ser path relativo o URL
+  tipo_id INT NOT NULL, -- FK a medio_tipo
+  orden INT DEFAULT 1,
+  metadata JSON NULL, -- exif, ancho/alto, duración en caso de video, etc.
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_articulo) REFERENCES articulo(id_articulo) ON DELETE CASCADE,
+  FOREIGN KEY (tipo_id) REFERENCES medio_tipo(id_medio_tipo) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Tags pivot
+CREATE TABLE articulo_tag (
+  id_articulo BIGINT NOT NULL,
+  id_tag INT NOT NULL,
+  PRIMARY KEY (id_articulo, id_tag),
+  FOREIGN KEY (id_articulo) REFERENCES articulo(id_articulo) ON DELETE CASCADE,
+  FOREIGN KEY (id_tag) REFERENCES tag(id_tag) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------
+-- Pedidos / carrito / detalle
+-- ---------------------
+CREATE TABLE pedido (
+  id_pedido BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id_user BIGINT NULL,
+  token_cliente VARCHAR(200) NULL, -- alternativa para pedidos de usuarios sin cuenta (igual que token_sesion)
+  estado ENUM('carrito','pendiente','pagado','enviado','entregado','cancelado') DEFAULT 'carrito',
+  total DECIMAL(12,2) NULL,
+  direccion_envio TEXT NULL,
+  metodo_pago VARCHAR(80) NULL,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  actualizado_en TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_pedido_user (id_user),
+  FOREIGN KEY (id_user) REFERENCES user(id_user) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE detalle_pedido (
+  id_detalle BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id_pedido BIGINT NOT NULL,
+  id_articulo BIGINT NOT NULL,
+  precio_unitario DECIMAL(12,2) NULL,
+  cantidad INT NOT NULL DEFAULT 1,
+  subtotal DECIMAL(12,2) AS (precio_unitario * cantidad) STORED,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_detalle_pedido_pedido (id_pedido),
+  FOREIGN KEY (id_pedido) REFERENCES pedido(id_pedido) ON DELETE CASCADE,
+  FOREIGN KEY (id_articulo) REFERENCES articulo(id_articulo) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------
+-- Facturación
+-- ---------------------
+CREATE TABLE facturacion (
+  id_factura BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id_user BIGINT NULL,
+  id_pedido BIGINT NOT NULL,
+  numero_factura VARCHAR(100) NOT NULL UNIQUE,
+  total DECIMAL(12,2) NOT NULL,
+  impuesto DECIMAL(12,2) NULL,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_user) REFERENCES user(id_user) ON DELETE SET NULL,
+  FOREIGN KEY (id_pedido) REFERENCES pedido(id_pedido) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------
+-- Lista de deseos
+-- ---------------------
+CREATE TABLE lista_deseos (
+  id_lista BIGINT AUTO_INCREMENT PRIMARY KEY,
+  id_user BIGINT NOT NULL,
+  nombre_lista VARCHAR(150) NULL,
+  creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_lista_user (id_user),
+  FOREIGN KEY (id_user) REFERENCES user(id_user) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE lista_deseos_items (
+  id_lista BIGINT NOT NULL,
+  id_articulo BIGINT NOT NULL,
+  agregado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_lista, id_articulo),
+  FOREIGN KEY (id_lista) REFERENCES lista_deseos(id_lista) ON DELETE CASCADE,
+  FOREIGN KEY (id_articulo) REFERENCES articulo(id_articulo) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------
+-- Indices y vistas auxiliares (ejemplos)
+-- ---------------------
+CREATE INDEX idx_articulo_visibilidad_categoria ON articulo (visibilidad, categoria_id);
+
+-- ---------------------
+-- Datos iniciales recomendados (catálogos mínimos)
+-- ---------------------
+INSERT INTO departamento (nombre, slug) VALUES ('Quetzaltenango','quetzaltenango'), ('Guatemala','guatemala');
+INSERT INTO municipio (departamento_id, nombre, slug) VALUES (1,'Quetzaltenango','qtz'), (2,'Guatemala','gtm');
+
+INSERT INTO role (nombre, descripcion) VALUES ('usuario','Usuario normal'), ('ecoemprendedor','Ecoemprendedor'), ('administrador','Administrador del sistema');
+
+INSERT INTO categoria (nombre, slug, descripcion) VALUES ('Plásticos','plásticos','Artículos de plástico reciclable'), ('Papel y cartón','papel-y-carton','Papel y cartón reciclable');
+
+INSERT INTO estado_articulo (nombre, descripcion) VALUES ('disponible','Disponible para intercambio/venta'), ('agotado','Sin unidades'), ('inactivo','No visible o deshabilitado');
+
+INSERT INTO medio_tipo (nombre) VALUES ('imagen'), ('video');
+
+INSERT INTO tag (nombre) VALUES ('reciclable'),('orgánico'),('plástico-pet');
+
+-- ---------------------
+-- Seguridad / configuración final
+-- ---------------------
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- Recomendaciones post-ejecución:
+-- 1) Crear usuario MySQL con permisos restringidos para la aplicación.
+-- 2) Configurar backups y binlog si requiere replicación.
+-- 3) Revisar collation e índices según volumen de datos.
+-- 4) Ajustar 'detalle' y 'detalles' JSON según esquema de atributos que necesites.
+-- 5) Añadir triggers si quieres actualizar stock automáticamente al crear detalle_pedido.
