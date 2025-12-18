@@ -1,7 +1,20 @@
 import { Injectable } from '@nestjs/common';
+import type { MailService } from '@sendgrid/mail';
+
+// Usamos require para evitar problemas de default/ESM con setApiKey
+const sgMail: MailService = require('@sendgrid/mail');
 
 @Injectable()
 export class EmailService {
+  constructor() {
+    const apiKey = process.env.SENDGRID_API_KEY;
+    if (!apiKey) {
+      console.warn('[EmailService] SENDGRID_API_KEY no está definido. Se omitirá el envío real de correos.');
+    } else {
+      sgMail.setApiKey(apiKey);
+    }
+  }
+
   /**
    * Envía un correo con código de verificación
    * 
@@ -12,33 +25,31 @@ export class EmailService {
    * - Mailgun
    */
   async sendVerificationCode(email: string, code: string): Promise<void> {
-    // Simulación: simplemente logueamos
-    console.log(`
-    ╔════════════════════════════════════════╗
-    ║  CÓDIGO DE VERIFICACIÓN DE CORREO     ║
-    ╚════════════════════════════════════════╝
-    Email: ${email}
-    Código: ${code}
-    Válido por: 15 minutos
-    ════════════════════════════════════════
-    `);
-
-    // Para producción, usar algo como:
-    /*
-    const msg = {
-      to: email,
-      from: process.env.SENDGRID_FROM_EMAIL,
-      subject: 'Código de verificación de correo',
-      html: `
-        <h1>Verifica tu correo electrónico</h1>
-        <p>Tu código de verificación es:</p>
-        <h2 style="font-size: 24px; font-weight: bold; color: #007bff;">${code}</h2>
-        <p>Este código es válido por 15 minutos.</p>
-        <p>No compartas este código con nadie.</p>
-      `,
-    };
-    await sgMail.send(msg);
-    */
+    const apiKey = process.env.SENDGRID_API_KEY;
+    if (!apiKey) {
+      console.log('[EmailService] SendGrid sin configurar. Logeando código en consola.');
+      console.log(`Código para ${email}: ${code}`);
+      return;
+    }
+    try {
+      const msg = {
+        to: email,
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@psifirm.com',
+        subject: 'Código de verificación - PsiFirm',
+        html: `
+          <h1>Verifica tu correo</h1>
+          <p>Tu código es: <strong>${code}</strong></p>
+          <p>Válido por 15 minutos</p>
+        `,
+      };
+      await sgMail.send(msg);
+    } catch (error) {
+      console.error('Error enviando email:', error);
+      // En desarrollo, no fallar si SendGrid no está configurado
+      if (process.env.NODE_ENV === 'production') {
+        throw error;
+      }
+    }
   }
 
   /**

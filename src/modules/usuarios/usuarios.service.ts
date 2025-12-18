@@ -29,11 +29,13 @@ export class UsuariosService {
         : await bcrypt.hash(passwordHash, 10)
       : await bcrypt.hash('default123', 10);
 
+    // Creación interna: usuario activo y verificado por defecto
     const user = await this.prisma.user.create({
       data: {
         ...rest,
         passwordHash: hashedPassword,
         isActive: true,
+        isEmailVerified: true, // Verificado automáticamente para creación interna
       },
       include: {
         roles: {
@@ -117,9 +119,32 @@ export class UsuariosService {
     return user;
   }
 
-  remove(id: number) {
-    return this.prisma.user.delete({
+  async remove(id: number) {
+    const user = await this.prisma.user.findUnique({
       where: { id },
+      select: {
+        id: true,
+        employee: { select: { id: true } },
+        patient: { select: { id: true } },
+        roles: { select: { roleId: true } },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('El usuario no existe.');
+    }
+
+    if (user.employee || user.patient) {
+      throw new BadRequestException(
+        'No se puede eliminar el usuario porque tiene dependencias (empleado o paciente). Desactive el usuario en su lugar o elimine las dependencias primero.'
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      if (user.roles?.length) {
+        await tx.userRole.deleteMany({ where: { userId: id } });
+      }
+      return tx.user.delete({ where: { id } });
     });
   }
 }

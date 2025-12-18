@@ -17,7 +17,7 @@ La aplicación estará disponible en `http://localhost:3000`
 ### Paso 2: Abrir Swagger Documentation
 
 ```
-http://localhost:3000/api/docs
+http://localhost:3000/api#
 ```
 
 ### Paso 3: Probar Endpoints
