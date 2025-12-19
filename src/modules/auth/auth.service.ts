@@ -5,8 +5,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RegisterPatientDto } from './dto/register-patient.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendCodeDto } from './dto/resend-code.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -29,6 +33,15 @@ export class AuthService {
   private getExpirationDate(): Date {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+    return expiresAt;
+  }
+
+  /**
+   * Calcula la fecha de expiración del token de recuperación (60 minutos desde ahora)
+   */
+  private getPasswordResetExpiration(): Date {
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 60);
     return expiresAt;
   }
 
@@ -89,6 +102,101 @@ export class AuthService {
 
     return {
       message: 'Usuario registrado exitosamente. Se ha enviado un código de verificación al correo.',
+      email: user.email,
+    };
+  }
+
+  /**
+   * Registra un nuevo paciente con su perfil completo
+   */
+  async registerPatient(registerPatientDto: RegisterPatientDto) {
+    const { email, username, password, ...patientData } = registerPatientDto;
+
+    // Verificar si el usuario ya existe
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email }, { username }],
+      },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('El email o usuario ya está registrado');
+    }
+
+    // Hashear la contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Crear usuario y paciente en una transacción
+    const user = await this.prisma.$transaction(async (prisma) => {
+      // Crear usuario
+      const newUser = await prisma.user.create({
+        data: {
+          email,
+          username,
+          passwordHash: hashedPassword,
+          isActive: true,
+          isEmailVerified: false,
+        },
+      });
+
+      // Asignar rol de paciente
+      const patientRole = await prisma.role.findUnique({
+        where: { name: 'paciente' },
+      });
+
+      if (patientRole) {
+        await prisma.userRole.create({
+          data: {
+            userId: newUser.id,
+            roleId: patientRole.id,
+          },
+        });
+      }
+
+      // Crear perfil de paciente
+      await prisma.patient.create({
+        data: {
+          userId: newUser.id,
+          firstName: patientData.firstName,
+          lastName: patientData.lastName,
+          birthDate: new Date(patientData.birthDate),
+          gender: patientData.gender,
+          civilStatus: patientData.civilStatus,
+          occupation: patientData.occupation,
+          educationLevel: patientData.educationLevel,
+          phone: patientData.phone,
+          email: email,
+          address: patientData.address,
+          emergencyName: patientData.emergencyName,
+          emergencyPhone: patientData.emergencyPhone,
+          emergencyRelationship: patientData.emergencyRelationship,
+          alcoholUse: patientData.alcoholUse,
+          tobaccoUse: patientData.tobaccoUse,
+          isActive: true,
+        },
+      });
+
+      return newUser;
+    });
+
+    // Generar código de verificación
+    const code = this.generateVerificationCode();
+    const expiresAt = this.getExpirationDate();
+
+    // Guardar código en BD
+    await this.prisma.emailVerification.create({
+      data: {
+        userId: user.id,
+        code,
+        expiresAt,
+      },
+    });
+
+    // Enviar código por correo
+    await this.sendVerificationEmail(email, code);
+
+    return {
+      message: 'Paciente registrado exitosamente. Se ha enviado un código de verificación al correo.',
       email: user.email,
     };
   }
@@ -300,5 +408,74 @@ export class AuthService {
         patient: true,
       },
     });
+  }
+
+  /**
+   * Genera y envía un token de recuperación de contraseña
+   */
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    const { email } = forgotPasswordDto;
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      // Mantener consistencia con el estilo actual (errores explícitos)
+      throw new BadRequestException('Usuario no encontrado');
+    }
+
+    const recoveryToken = randomBytes(32).toString('hex');
+    const recoveryExpiresAt = this.getPasswordResetExpiration();
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        recoveryToken,
+        recoveryExpiresAt,
+      },
+    });
+
+    await this.emailService.sendPasswordResetEmail(email, recoveryToken);
+
+    return {
+      message: 'Se ha enviado un correo con instrucciones para reestablecer tu contraseña',
+      email,
+      // No exponemos el token en respuesta
+    };
+  }
+
+  /**
+   * Reestablece la contraseña usando el token de recuperación
+   */
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const { token, newPassword } = resetPasswordDto;
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        recoveryToken: token,
+        recoveryExpiresAt: {
+          gte: new Date(),
+        },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Token inválido o expirado');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: hashedPassword,
+        recoveryToken: null,
+        recoveryExpiresAt: null,
+      },
+    });
+
+    return {
+      message: 'Contraseña actualizada exitosamente',
+      email: user.email,
+    };
   }
 }

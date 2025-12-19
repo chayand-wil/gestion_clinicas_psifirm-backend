@@ -65,8 +65,36 @@ export class EmailService {
    * Envía un correo de reestablecimiento de contraseña
    */
   async sendPasswordResetEmail(email: string, resetToken: string): Promise<void> {
-    console.log(`[EMAIL] Correo de reestablecimiento enviado a ${email}`);
-    
-    // TODO: Implementar envío real
+    const apiKey = process.env.SENDGRID_API_KEY;
+    if (!apiKey) {
+      console.log('[EmailService] SendGrid sin configurar. Logeando token en consola.');
+      console.log(`Token de recuperación para ${email}: ${resetToken}`);
+      return;
+    }
+    try {
+      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3001'}/auth/reset-password?token=${resetToken}`;
+      const msg = {
+        to: email,
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@psifirm.com',
+        subject: 'Reestablecer contraseña - PsiFirm',
+        html: `
+          <h1>Reestablece tu contraseña</h1>
+          <p>Has solicitado reestablecer tu contraseña.</p>
+          <p>Haz clic en el siguiente enlace para continuar:</p>
+          <a href="${resetUrl}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Reestablecer contraseña</a>
+          <p>O copia y pega este enlace en tu navegador:</p>
+          <p>${resetUrl}</p>
+          <p>Este enlace expira en 60 minutos.</p>
+          <p>Si no solicitaste este cambio, ignora este correo.</p>
+        `,
+      };
+      await sgMail.send(msg);
+    } catch (error) {
+      console.error('Error enviando email de recuperación:', error);
+      // En desarrollo, no fallar si SendGrid no está configurado
+      if (process.env.NODE_ENV === 'production') {
+        throw error;
+      }
+    }
   }
 }

@@ -273,21 +273,7 @@ SMTP_USER=xxxxx@gmail.com
 SMTP_PASSWORD=xxxxx
 ```
 
-## 📚 Documentación
-
-- `EMAIL_VERIFICATION.md` - Documentación técnica completa
-- `FRONTEND_INTEGRATION.md` - Guía para integración Nuxt 3
-- `PRUEBAS_REGISTRO.http` - Ejemplos HTTP para prueba
-
-## ✨ Características Futuras
-
-- [ ] Recuperación de contraseña
-- [ ] Autenticación de dos factores (2FA)
-- [ ] OAuth2 (Google, GitHub, etc.)
-- [ ] Redes sociales login
-- [ ] Confirmación de cambios de email
-- [ ] Sesiones con múltiples dispositivos
-- [ ] Revocación de tokens
+ 
 
 ## 🛠️ Stack Tecnológico
 
@@ -311,4 +297,4 @@ SMTP_PASSWORD=xxxxx
 ---
 
 **Desarrollado**: 18 de Diciembre de 2025
-**Estado**: Producción lista (requiere integración de email real)
+**Estado**: Producción lista en produccion

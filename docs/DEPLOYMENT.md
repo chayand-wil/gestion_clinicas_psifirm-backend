@@ -28,23 +28,11 @@ cp .env.example .env
 DATABASE_URL="mysql://user:password@localhost:3306/psifirm_clinics"
 JWT_SECRET="super-secret-key-change-this-in-production"
 
-# Email (elegir una opción)
-# Opción 1: SendGrid
+
 SENDGRID_API_KEY="sg_xxxxxxxxx"
 SENDGRID_FROM_EMAIL="noreply@psifirm.com"
 
-# Opción 2: AWS SES
-AWS_REGION="us-east-1"
-AWS_ACCESS_KEY_ID="xxxxx"
-AWS_SECRET_ACCESS_KEY="xxxxx"
-
-# Opción 3: SMTP
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="587"
-SMTP_USER="your-email@gmail.com"
-SMTP_PASSWORD="your-app-password"
-SMTP_FROM_EMAIL="noreply@psifirm.com"
-```
+ 
 
 ### 3. Ejecutar migraciones
 

@@ -3,8 +3,11 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RegisterPatientDto } from './dto/register-patient.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendCodeDto } from './dto/resend-code.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -17,6 +20,14 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Email o usuario ya existen' })
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @Post('register-patient')
+  @ApiOperation({ summary: 'Registrar nuevo paciente con perfil completo' })
+  @ApiResponse({ status: 201, description: 'Paciente registrado exitosamente' })
+  @ApiResponse({ status: 409, description: 'Email o usuario ya existen' })
+  registerPatient(@Body() registerPatientDto: RegisterPatientDto) {
+    return this.authService.registerPatient(registerPatientDto);
   }
 
   @Post('verify-email')
@@ -41,5 +52,21 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Credenciales inválidas' })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Solicitar recuperación de contraseña' })
+  @ApiResponse({ status: 200, description: 'Se envió el correo de recuperación (si el usuario existe)' })
+  @ApiResponse({ status: 400, description: 'Usuario no encontrado' })
+  forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reestablecer contraseña con token' })
+  @ApiResponse({ status: 200, description: 'Contraseña actualizada exitosamente' })
+  @ApiResponse({ status: 400, description: 'Token inválido o expirado' })
+  resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.authService.resetPassword(resetPasswordDto);
   }
 }
