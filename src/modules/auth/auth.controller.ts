@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterPatientDto } from './dto/register-patient.dto';
+import { RegisterEmployeeDto } from './dto/register-employee.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendCodeDto } from './dto/resend-code.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -28,6 +29,15 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Email o usuario ya existen' })
   registerPatient(@Body() registerPatientDto: RegisterPatientDto) {
     return this.authService.registerPatient(registerPatientDto);
+  }
+
+  @Post('register-employee')
+  @ApiOperation({ summary: 'Registrar nuevo empleado con perfil completo' })
+  @ApiResponse({ status: 201, description: 'Empleado registrado exitosamente' })
+  @ApiResponse({ status: 409, description: 'Email o usuario ya existen' })
+  @ApiResponse({ status: 400, description: 'Área de especialidad o roles no existen' })
+  registerEmployee(@Body() registerEmployeeDto: RegisterEmployeeDto) {
+    return this.authService.registerEmployee(registerEmployeeDto);
   }
 
   @Post('verify-email')

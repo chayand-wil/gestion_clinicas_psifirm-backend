@@ -17,6 +17,8 @@ const prisma = new PrismaClient();
 // Hash de bcrypt para "admin123" pre-generado para evitar dependencias en el seed
 const PASSWORD_HASH = '$2b$10$eASfv2odOZLb75sB6ueJWuAkqRgWyuLOEw77cqVnoRSvRnKjaAN7u';
 
+
+// convierte un texto en un slug: una versión “limpia” y normalizada de un string,
 const slugifyModule = (value: string) =>
   value
     .toLowerCase()
@@ -61,7 +63,7 @@ async function seedRolesAndPermissions() {
 
   const actions = [
     { key: 'ver', description: 'Puede ver registros.' },
-    { key: 'crear', description: 'Puede crear registros.' },
+    { key: 'crear', description: 'Puede crear r egistros.' },
     { key: 'editar', description: 'Puede editar registros.' },
     { key: 'eliminar', description: 'Puede eliminar registros.' },
     { key: 'exportar', description: 'Puede exportar información.' },

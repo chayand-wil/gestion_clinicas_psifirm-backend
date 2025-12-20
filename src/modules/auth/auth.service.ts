@@ -6,11 +6,13 @@ import { EmailService } from '../email/email.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterPatientDto } from './dto/register-patient.dto';
+import { RegisterEmployeeDto } from './dto/register-employee.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendCodeDto } from './dto/resend-code.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { randomBytes } from 'crypto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -197,6 +199,108 @@ export class AuthService {
 
     return {
       message: 'Paciente registrado exitosamente. Se ha enviado un código de verificación al correo.',
+      email: user.email,
+    };
+  }
+
+  /**
+   * Registra un nuevo empleado con su perfil completo
+   */
+  async registerEmployee(registerEmployeeDto: RegisterEmployeeDto) {
+    const { email, username, password, roleIds, ...employeeData } = registerEmployeeDto;
+
+    // Verificar si el usuario ya existe
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email }, { username }],
+      },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('El email o usuario ya está registrado');
+    }
+
+    // Verificar que el área de especialidad exista
+    const specialtyArea = await this.prisma.specialtyArea.findUnique({
+      where: { id: employeeData.specialtyAreaId },
+    });
+
+    if (!specialtyArea) {
+      throw new BadRequestException('El área de especialidad no existe');
+    }
+
+    // Verificar que los roles existan
+    const roles = await this.prisma.role.findMany({
+      where: { id: { in: roleIds } },
+    });
+
+    if (roles.length !== roleIds.length) {
+      throw new BadRequestException('Uno o más roles no existen');
+    }
+
+    // Hashear la contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Crear usuario y empleado en una transacción
+    const user = await this.prisma.$transaction(async (prisma) => {
+      // Crear usuario
+      const newUser = await prisma.user.create({
+        data: {
+          email,
+          username,
+          passwordHash: hashedPassword,
+          isActive: true,
+          isEmailVerified: false,
+        },
+      });
+
+      // Asignar roles
+      for (const roleId of roleIds) {
+        await prisma.userRole.create({
+          data: {
+            userId: newUser.id,
+            roleId: roleId,
+          },
+        });
+      }
+
+      // Crear perfil de empleado
+      await prisma.employee.create({
+        data: {
+          userId: newUser.id,
+          firstName: employeeData.firstName,
+          lastName: employeeData.lastName,
+          specialtyAreaId: employeeData.specialtyAreaId,
+          contractType: employeeData.contractType,
+          paymentType: employeeData.paymentType,
+          baseSalary: new Prisma.Decimal(employeeData.baseSalary),
+          sessionRate: new Prisma.Decimal(employeeData.sessionRate),
+          licenseNumber: employeeData.licenseNumber,
+          isActive: true,
+        },
+      });
+
+      return newUser;
+    });
+
+    // Generar código de verificación
+    const code = this.generateVerificationCode();
+    const expiresAt = this.getExpirationDate();
+
+    // Guardar código en BD
+    await this.prisma.emailVerification.create({
+      data: {
+        userId: user.id,
+        code,
+        expiresAt,
+      },
+    });
+
+    // Enviar código por correo
+    await this.sendVerificationEmail(email, code);
+
+    return {
+      message: 'Empleado registrado exitosamente. Se ha enviado un código de verificación al correo.',
       email: user.email,
     };
   }
