@@ -11,9 +11,9 @@ export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard) // Solo para admins/staff
+  @UseGuards(JwtAuthGuard) // Solo para admins
   @ApiOperation({ 
-    summary: 'Crear usuario internamente (admin/staff)',
+    summary: 'Crear usuario internamente (admin)',
     description: 'Crea usuario sin verificación de email. Solo para uso interno por administradores o staff. Para registro público usar POST /auth/register'
   })
   @ApiResponse({ status: 201, description: 'Usuario creado exitosamente' })

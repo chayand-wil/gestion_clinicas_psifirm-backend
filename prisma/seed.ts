@@ -17,17 +17,25 @@ const prisma = new PrismaClient();
 // Hash de bcrypt para "admin123" pre-generado para evitar dependencias en el seed
 const PASSWORD_HASH = '$2b$10$eASfv2odOZLb75sB6ueJWuAkqRgWyuLOEw77cqVnoRSvRnKjaAN7u';
 
-
-// convierte un texto en un slug: una versión “limpia” y normalizada de un string,
+/**
+ * Convierte un texto en un slug: una versión "limpia" y normalizada de un string.
+ * Ejemplo: "Historia Clínica" → "historia_clinica"
+ */
 const slugifyModule = (value: string) =>
   value
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
+    .replace(/[\u0300-\u036f]/g, '') // Elimina acentos
+    .replace(/[^a-z0-9]+/g, '_') // Reemplaza caracteres especiales con guión bajo
+    .replace(/^_+|_+$/g, ''); // Elimina guiones bajos al inicio y final
 
+/**
+ * Seed de Roles y Permisos
+ * Crea los roles del sistema (admin, psicólogo, etc.) y sus permisos asociados.
+ * Establece una matriz de permisos por rol.
+ */
 async function seedRolesAndPermissions() {
+  // Definir roles disponibles en el sistema
   const rolesData = [
     { name: 'admin', description: 'Acceso total a la plataforma.' },
     { name: 'psicologo / terapeuta', description: 'Gestión clínica completa de sus pacientes.' },
@@ -37,8 +45,10 @@ async function seedRolesAndPermissions() {
     { name: 'finanzas / contabilidad', description: 'Pagos, facturación y nómina.' },
     { name: 'recursos humanos', description: 'Gestión de usuarios y nómina.' },
     { name: 'paciente', description: 'Acceso limitado a su información y citas.' },
+    { name: 'empleado', description: 'Rol base del sistema.' },
   ];
 
+  // Módulos del sistema para los que se crearán permisos
   const systemModules = [
     'Autenticación',
     'Usuarios',
@@ -61,9 +71,10 @@ async function seedRolesAndPermissions() {
     'Auditoría',
   ];
 
+  // Acciones que pueden realizarse en cada módulo
   const actions = [
     { key: 'ver', description: 'Puede ver registros.' },
-    { key: 'crear', description: 'Puede crear r egistros.' },
+    { key: 'crear', description: 'Puede crear registros.' },
     { key: 'editar', description: 'Puede editar registros.' },
     { key: 'eliminar', description: 'Puede eliminar registros.' },
     { key: 'exportar', description: 'Puede exportar información.' },
@@ -72,6 +83,7 @@ async function seedRolesAndPermissions() {
     { key: 'acceso_total', description: 'Puede operar sobre todos los registros.' },
   ];
 
+  // Combina módulos y acciones para crear permisos únicos (ej: "pacientes:ver")
   const permissionsData = systemModules.flatMap((module) =>
     actions.map((action) => ({
       name: `${slugifyModule(module)}:${action.key}`,
@@ -80,6 +92,7 @@ async function seedRolesAndPermissions() {
     })),
   );
 
+  // Crea o actualiza roles y permisos en BD
   const [roleRecords, permissionRecords] = await Promise.all([
     Promise.all(
       rolesData.map((role) =>
@@ -101,16 +114,19 @@ async function seedRolesAndPermissions() {
     ),
   ]);
 
+  // Mapea roles y permisos por nombre para búsqueda rápida
   const roleByName = new Map(roleRecords.map((role) => [role.name, role]));
   const permissionByName = new Map(permissionRecords.map((perm) => [perm.name, perm]));
 
+  // Funciones auxiliares para construir matrices de permisos
   const permissionName = (module: string, actionKey: string) => `${slugifyModule(module)}:${actionKey}`;
   const pick = (modules: string[], actionKeys: string[]) =>
     modules.flatMap((module) => actionKeys.map((action) => permissionName(module, action)));
 
+  // Matriz de permisos: Rol → Lista de permisos
   const rolePermissionMatrix: Record<string, string[]> = {
-    'Administrador del Sistema': permissionsData.map((perm) => perm.name),
-    'Psicólogo / Terapeuta': pick(
+    'admin': permissionsData.map((perm) => perm.name),
+    'psicologo / terapeuta': pick(
       [
         'Pacientes',
         'Historia Clínica',
@@ -126,7 +142,7 @@ async function seedRolesAndPermissions() {
       ],
       ['ver', 'crear', 'editar', 'firmar', 'acceso_propio'],
     ),
-    Psiquiatra: pick(
+    'psiquiatra': pick(
       [
         'Pacientes',
         'Historia Clínica',
@@ -139,16 +155,23 @@ async function seedRolesAndPermissions() {
       ],
       ['ver', 'crear', 'editar', 'firmar', 'acceso_propio'],
     ),
-    Recepción: pick(['Pacientes', 'Agenda / Citas', 'Pagos'], ['ver', 'crear', 'editar', 'acceso_propio']),
-    'Inventario / Farmacia': pick(['Inventario', 'Prescripciones'], ['ver', 'crear', 'editar', 'exportar', 'acceso_total']),
-    'Finanzas / Contabilidad': pick(
-      ['Facturación', 'Pagos', 'Nómina', 'Reportes', 'Auditoría'],
+    'recepcion': pick(['Pacientes', 'Agenda / Citas', 'Pagos'],
+       ['ver', 'crear', 'editar', 'acceso_propio']),
+
+    'inventario / farmacia': pick(['Inventario', 'Prescripciones'],
+    ['ver', 'crear', 'editar', 'exportar', 'acceso_total']),
+
+    'finanzas / contabilidad': pick(['Facturación', 'Pagos', 'Nómina', 'Reportes', 'Auditoría'],
       ['ver', 'exportar', 'acceso_total'],
     ),
-    'Recursos Humanos': pick(['Usuarios', 'Roles y Permisos', 'Nómina'], ['ver', 'crear', 'editar', 'acceso_total']),
-    Paciente: pick(['Pacientes', 'Agenda / Citas', 'Pagos'], ['ver', 'crear', 'acceso_propio']),
+
+    'recursos humanos': pick(['Usuarios', 'Roles y Permisos', 'Nómina'],
+    ['ver', 'crear', 'editar', 'acceso_total']),
+    
+    'paciente': pick(['Pacientes', 'Agenda / Citas', 'Pagos'], ['ver', 'crear', 'acceso_propio']),
   };
 
+  // Asigna permisos a roles
   for (const [roleName, permissions] of Object.entries(rolePermissionMatrix)) {
     const role = roleByName.get(roleName);
     if (!role) continue;
@@ -168,9 +191,13 @@ async function seedRolesAndPermissions() {
   return { roleByName };
 }
 
+/**
+ * Seed de Etiquetas (Tags)
+ * Crea etiquetas clínicas categorizadas: temas, intervenciones, emociones, síntomas, etc.
+ */
 async function seedTags() {
   const tagsData = [
-    // Temas
+    // Temas clínicos
     { name: 'Ansiedad', category: TagCategory.TEMA, description: 'Tema clínico base' },
     { name: 'Depresión', category: TagCategory.TEMA, description: 'Tema clínico base' },
     { name: 'Duelo', category: TagCategory.TEMA, description: 'Tema clínico base' },
@@ -179,32 +206,33 @@ async function seedTags() {
     { name: 'Autoestima', category: TagCategory.TEMA, description: 'Tema clínico base' },
     { name: 'Relaciones', category: TagCategory.TEMA, description: 'Tema clínico base' },
 
-    // Intervenciones
+    // Intervenciones terapéuticas
     { name: 'Reestructuración cognitiva', category: TagCategory.INTERVENCION, description: 'Intervención terapéutica' },
     { name: 'Psicoeducación', category: TagCategory.INTERVENCION, description: 'Intervención terapéutica' },
     { name: 'Técnicas de respiración', category: TagCategory.INTERVENCION, description: 'Intervención terapéutica' },
     { name: 'Exposición gradual', category: TagCategory.INTERVENCION, description: 'Intervención terapéutica' },
     { name: 'Role-playing', category: TagCategory.INTERVENCION, description: 'Intervención terapéutica' },
 
-    // Emociones
+    // Emociones reportadas por pacientes
     { name: 'Tristeza', category: TagCategory.EMOCION, description: 'Emoción reportada' },
     { name: 'Ira', category: TagCategory.EMOCION, description: 'Emoción reportada' },
     { name: 'Miedo', category: TagCategory.EMOCION, description: 'Emoción reportada' },
     { name: 'Culpa', category: TagCategory.EMOCION, description: 'Emoción reportada' },
     { name: 'Alegría', category: TagCategory.EMOCION, description: 'Emoción reportada' },
 
-    // Síntomas
+    // Síntomas clínicos
     { name: 'Insomnio', category: TagCategory.SINTOMA, description: 'Síntoma clínico' },
     { name: 'Ataques de pánico', category: TagCategory.SINTOMA, description: 'Síntoma clínico' },
     { name: 'Ideación suicida', category: TagCategory.SINTOMA, description: 'Síntoma clínico' },
     { name: 'Fatiga', category: TagCategory.SINTOMA, description: 'Síntoma clínico' },
     { name: 'Irritabilidad', category: TagCategory.SINTOMA, description: 'Síntoma clínico' },
 
-    // Otros (categorías sin enum específico)
+    // Otros
     { name: 'Conducta', category: TagCategory.OTRO, description: 'Categoría genérica: Conducta' },
     { name: 'Evento Vital', category: TagCategory.OTRO, description: 'Categoría genérica: Evento vital' },
   ];
 
+  // Crea o actualiza todas las etiquetas
   await Promise.all(
     tagsData.map((tag) =>
       prisma.tag.upsert({
@@ -216,6 +244,10 @@ async function seedTags() {
   );
 }
 
+/**
+ * Seed de Áreas de Especialidad
+ * Define las áreas clínicas y administrativas del sistema.
+ */
 async function seedSpecialtyAreas() {
   const areas = [
     { name: 'Psicología Clínica', description: 'Atención psicológica general.' },
@@ -229,6 +261,7 @@ async function seedSpecialtyAreas() {
     { name: 'Administración y Operaciones', description: 'Área para personal no clínico.' },
   ];
 
+  // Crea o actualiza áreas y mapea por nombre
   const records = await Promise.all(
     areas.map((area) =>
       prisma.specialtyArea.upsert({
@@ -242,7 +275,12 @@ async function seedSpecialtyAreas() {
   return new Map(records.map((area) => [area.name, area]));
 }
 
+/**
+ * Seed de Usuarios, Empleados y Pacientes
+ * Crea usuarios de demostración con sus roles y datos asociados.
+ */
 async function seedUsersAndPeople(roleByName: Map<string, { id: number }>, areaByName: Map<string, { id: number }>) {
+  // Datos base de usuarios de demostración
   const baseUsers = [
     {
       email: 'admin@psifirm.test',
@@ -263,7 +301,7 @@ async function seedUsersAndPeople(roleByName: Map<string, { id: number }>, areaB
       username: 'psicologo.demo',
       firstName: 'Mariana',
       lastName: 'Lopez',
-      roles: ['Psicólogo / Terapeuta'],
+      roles: ['psicologo / terapeuta'],
       employee: {
         area: 'Psicología Clínica',
         contractType: ContractType.INDEFINIDO,
@@ -278,7 +316,7 @@ async function seedUsersAndPeople(roleByName: Map<string, { id: number }>, areaB
       username: 'psiquiatra.demo',
       firstName: 'Roberto',
       lastName: 'Paz',
-      roles: ['Psiquiatra'],
+      roles: ['psiquiatra'],
       employee: {
         area: 'Psiquiatría',
         contractType: ContractType.SERVICIOS,
@@ -293,7 +331,7 @@ async function seedUsersAndPeople(roleByName: Map<string, { id: number }>, areaB
       username: 'recepcion.demo',
       firstName: 'Lucia',
       lastName: 'Gomez',
-      roles: ['Recepción'],
+      roles: ['recepcion'],
       employee: {
         area: 'Administración y Operaciones',
         contractType: ContractType.INDEFINIDO,
@@ -307,7 +345,7 @@ async function seedUsersAndPeople(roleByName: Map<string, { id: number }>, areaB
       username: 'inventario.demo',
       firstName: 'Diego',
       lastName: 'Alvarez',
-      roles: ['Inventario / Farmacia'],
+      roles: ['inventario / farmacia'],
       employee: {
         area: 'Administración y Operaciones',
         contractType: ContractType.INDEFINIDO,
@@ -321,7 +359,7 @@ async function seedUsersAndPeople(roleByName: Map<string, { id: number }>, areaB
       username: 'finanzas.demo',
       firstName: 'Karla',
       lastName: 'Juarez',
-      roles: ['Finanzas / Contabilidad'],
+      roles: ['finanzas / contabilidad'],
       employee: {
         area: 'Administración y Operaciones',
         contractType: ContractType.INDEFINIDO,
@@ -335,7 +373,7 @@ async function seedUsersAndPeople(roleByName: Map<string, { id: number }>, areaB
       username: 'rrhh.demo',
       firstName: 'Carmen',
       lastName: 'Ruiz',
-      roles: ['Recursos Humanos'],
+      roles: ['recursos humanos'],
       employee: {
         area: 'Administración y Operaciones',
         contractType: ContractType.INDEFINIDO,
@@ -349,7 +387,7 @@ async function seedUsersAndPeople(roleByName: Map<string, { id: number }>, areaB
       username: 'paciente.demo',
       firstName: 'Paciente',
       lastName: 'Demo',
-      roles: ['Paciente'],
+      roles: ['paciente'],
       patient: {
         birthDate: new Date('1995-05-20'),
         gender: Gender.FEMENINO,
@@ -366,7 +404,9 @@ async function seedUsersAndPeople(roleByName: Map<string, { id: number }>, areaB
     },
   ];
 
+  // Itera sobre cada usuario para crearlo con sus relaciones
   for (const userSeed of baseUsers) {
+    // Crea o actualiza el usuario base
     const user = await prisma.user.upsert({
       where: { email: userSeed.email },
       update: {
@@ -381,6 +421,7 @@ async function seedUsersAndPeople(roleByName: Map<string, { id: number }>, areaB
       },
     });
 
+    // Asigna roles al usuario
     for (const roleName of userSeed.roles) {
       const role = roleByName.get(roleName);
       if (!role) continue;
@@ -392,6 +433,7 @@ async function seedUsersAndPeople(roleByName: Map<string, { id: number }>, areaB
       });
     }
 
+    // Si es un empleado, crea su registro en la tabla de empleados
     if (userSeed.employee) {
       const area = areaByName.get(userSeed.employee.area);
       if (!area) {
@@ -425,6 +467,7 @@ async function seedUsersAndPeople(roleByName: Map<string, { id: number }>, areaB
       });
     }
 
+    // Si es un paciente, crea su registro en la tabla de pacientes
     if (userSeed.patient) {
       await prisma.patient.upsert({
         where: { userId: user.id },
@@ -470,6 +513,9 @@ async function seedUsersAndPeople(roleByName: Map<string, { id: number }>, areaB
   }
 }
 
+/**
+ * Función principal que ejecuta todos los seeds en orden
+ */
 async function main() {
   const { roleByName } = await seedRolesAndPermissions();
   await seedTags();
@@ -477,6 +523,7 @@ async function main() {
   await seedUsersAndPeople(roleByName, areaByName);
 }
 
+// Ejecuta el seed y maneja errores
 main()
   .catch((error) => {
     console.error('❌ Error durante el seed:', error);

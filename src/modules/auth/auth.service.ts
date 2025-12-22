@@ -303,7 +303,7 @@ export class AuthService {
       message: 'Empleado registrado exitosamente. Se ha enviado un código de verificación al correo.',
       email: user.email,
     };
-  }
+   }
 
   /**
    * Verifica el correo con el código proporcionado

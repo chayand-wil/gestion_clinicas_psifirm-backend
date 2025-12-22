@@ -56,7 +56,7 @@ export class RegisterEmployeeDto {
   @IsNumber()
   @IsNotEmpty()
   @Type(() => Number)
-  specialtyAreaId: number;z
+  specialtyAreaId: number;
 
   @ApiProperty({
     example: 'INDEFINIDO',

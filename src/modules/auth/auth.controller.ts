@@ -31,7 +31,7 @@ export class AuthController {
     return this.authService.registerPatient(registerPatientDto);
   }
 
-  @Post('register-employee')
+  @Post('register-employee') 
   @ApiOperation({ summary: 'Registrar nuevo empleado con perfil completo' })
   @ApiResponse({ status: 201, description: 'Empleado registrado exitosamente' })
   @ApiResponse({ status: 409, description: 'Email o usuario ya existen' })
@@ -39,6 +39,13 @@ export class AuthController {
   registerEmployee(@Body() registerEmployeeDto: RegisterEmployeeDto) {
     return this.authService.registerEmployee(registerEmployeeDto);
   }
+
+
+
+  
+
+
+  
 
   @Post('verify-email')
   @ApiOperation({ summary: 'Verificar correo con código' })
@@ -55,6 +62,7 @@ export class AuthController {
   resendCode(@Body() resendCodeDto: ResendCodeDto) {
     return this.authService.resendVerificationCode(resendCodeDto);
   }
+  
 
   @Post('login')
   @ApiOperation({ summary: 'Iniciar sesión' })
