@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -51,7 +56,10 @@ export class AuthService {
    * Envía el código de verificación por correo (simulado)
    * En producción, usar un servicio como SendGrid, AWS SES, etc.
    */
-  private async sendVerificationEmail(email: string, code: string): Promise<void> {
+  private async sendVerificationEmail(
+    email: string,
+    code: string,
+  ): Promise<void> {
     await this.emailService.sendVerificationCode(email, code);
   }
 
@@ -103,7 +111,8 @@ export class AuthService {
     await this.sendVerificationEmail(email, code);
 
     return {
-      message: 'Usuario registrado exitosamente. Se ha enviado un código de verificación al correo.',
+      message:
+        'Usuario registrado exitosamente. Se ha enviado un código de verificación al correo.',
       email: user.email,
     };
   }
@@ -112,6 +121,7 @@ export class AuthService {
    * Registra un nuevo paciente con su perfil completo
    */
   async registerPatient(registerPatientDto: RegisterPatientDto) {
+    // destructuring con rest operator (...) en JavaScript/TypeScript.
     const { email, username, password, ...patientData } = registerPatientDto;
 
     // Verificar si el usuario ya existe
@@ -198,7 +208,8 @@ export class AuthService {
     await this.sendVerificationEmail(email, code);
 
     return {
-      message: 'Paciente registrado exitosamente. Se ha enviado un código de verificación al correo.',
+      message:
+        'Paciente registrado exitosamente. Se ha enviado un código de verificación al correo.',
       email: user.email,
     };
   }
@@ -207,7 +218,8 @@ export class AuthService {
    * Registra un nuevo empleado con su perfil completo
    */
   async registerEmployee(registerEmployeeDto: RegisterEmployeeDto) {
-    const { email, username, password, roleIds, ...employeeData } = registerEmployeeDto;
+    const { email, username, password, roleIds, ...employeeData } =
+      registerEmployeeDto;
 
     // Verificar si el usuario ya existe
     const existingUser = await this.prisma.user.findFirst({
@@ -220,14 +232,14 @@ export class AuthService {
       throw new ConflictException('El email o usuario ya está registrado');
     }
 
-    // Verificar que el área de especialidad exista
-    const specialtyArea = await this.prisma.specialtyArea.findUnique({
-      where: { id: employeeData.specialtyAreaId },
-    });
+    // // Verificar que el área de especialidad exista
+    // const specialtyArea = await this.prisma.specialtyArea.findUnique({
+    //   where: { id: employeeData.specialtyAreaId },
+    // });
 
-    if (!specialtyArea) {
-      throw new BadRequestException('El área de especialidad no existe');
-    }
+    // if (!specialtyArea) {
+    //   throw new BadRequestException('El área de especialidad no existe');
+    // }
 
     // Verificar que los roles existan
     const roles = await this.prisma.role.findMany({
@@ -273,10 +285,18 @@ export class AuthService {
           specialtyAreaId: employeeData.specialtyAreaId,
           contractType: employeeData.contractType,
           paymentType: employeeData.paymentType,
-          baseSalary: new Prisma.Decimal(employeeData.baseSalary),
-          sessionRate: new Prisma.Decimal(employeeData.sessionRate),
+          baseSalary: employeeData.baseSalary
+            ? new Prisma.Decimal(employeeData.baseSalary)
+            : null,
+
+          sessionRate: employeeData.sessionRate
+            ? new Prisma.Decimal(employeeData.sessionRate)
+            : null,
+
+          // baseSalary: new Prisma.Decimal(employeeData.baseSalary),
+          // sessionRate: new Prisma.Decimal(employeeData.sessionRate),
           licenseNumber: employeeData.licenseNumber,
-          isActive: true,
+          isActive: false,
         },
       });
 
@@ -300,10 +320,11 @@ export class AuthService {
     await this.sendVerificationEmail(email, code);
 
     return {
-      message: 'Empleado registrado exitosamente. Se ha enviado un código de verificación al correo.',
+      message:
+        'Empleado registrado exitosamente. Se ha enviado un código de verificación al correo.',
       email: user.email,
     };
-   }
+  }
 
   /**
    * Verifica el correo con el código proporcionado
@@ -334,7 +355,9 @@ export class AuthService {
     });
 
     if (!emailVerification) {
-      throw new BadRequestException('No hay un código de verificación pendiente. Solicita uno nuevo.');
+      throw new BadRequestException(
+        'No hay un código de verificación pendiente. Solicita uno nuevo.',
+      );
     }
 
     // Verificar si el código ha expirado
@@ -344,7 +367,9 @@ export class AuthService {
 
     // Verificar máximo de intentos
     if (emailVerification.attempts >= emailVerification.maxAttempts) {
-      throw new BadRequestException('Máximo de intentos alcanzado. Solicita un nuevo código.');
+      throw new BadRequestException(
+        'Máximo de intentos alcanzado. Solicita un nuevo código.',
+      );
     }
 
     // Verificar el código
@@ -355,7 +380,8 @@ export class AuthService {
         data: { attempts: emailVerification.attempts + 1 },
       });
 
-      const remainingAttempts = emailVerification.maxAttempts - emailVerification.attempts - 1;
+      const remainingAttempts =
+        emailVerification.maxAttempts - emailVerification.attempts - 1;
       throw new BadRequestException(
         `Código incorrecto. Tienes ${remainingAttempts} intentos restantes.`,
       );
@@ -455,7 +481,9 @@ export class AuthService {
 
     // Verificar que el correo esté verificado
     if (!user.isEmailVerified) {
-      throw new UnauthorizedException('Debes verificar tu correo antes de iniciar sesión');
+      throw new UnauthorizedException(
+        'Debes verificar tu correo antes de iniciar sesión',
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
@@ -541,7 +569,8 @@ export class AuthService {
     await this.emailService.sendPasswordResetEmail(email, recoveryToken);
 
     return {
-      message: 'Se ha enviado un correo con instrucciones para reestablecer tu contraseña',
+      message:
+        'Se ha enviado un correo con instrucciones para reestablecer tu contraseña',
       email,
       // No exponemos el token en respuesta
     };

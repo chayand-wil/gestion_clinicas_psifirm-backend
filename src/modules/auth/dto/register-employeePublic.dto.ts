@@ -1,17 +1,7 @@
-import {
-  IsEmail,
-  IsNotEmpty,
-  IsString,
-  MinLength,
-  IsEnum,
-  IsNumber,
-  IsDecimal,
-  IsOptional,
-} from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsEnum, IsNumber, IsDecimal, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ContractType, PaymentType } from '@prisma/client';
-import { Transform, Type } from 'class-transformer';
-
+import { Type } from 'class-transformer';
 
 export class RegisterEmployeeDto {
   @ApiProperty({
@@ -64,7 +54,7 @@ export class RegisterEmployeeDto {
     description: 'ID del área de especialidad',
   })
   @IsNumber()
-  @IsOptional()
+  @IsNotEmpty()
   @Type(() => Number)
   specialtyAreaId: number;
 
@@ -74,7 +64,7 @@ export class RegisterEmployeeDto {
     enum: ContractType,
   })
   @IsEnum(ContractType)
-  @IsOptional()
+  @IsNotEmpty()
   contractType: ContractType;
 
   @ApiProperty({
@@ -83,19 +73,24 @@ export class RegisterEmployeeDto {
     enum: PaymentType,
   })
   @IsEnum(PaymentType)
-  @IsOptional()
+  @IsNotEmpty()
   paymentType: PaymentType;
 
-@IsString()
-@IsOptional()
-@Transform(({ value }) => value === '' ? undefined : value)
-baseSalary?: string;
+  @ApiProperty({
+    example: '8500',
+    description: 'Salario base mensual',
+  })
+  @IsString()
+  @IsNotEmpty()
+  baseSalary: string;
 
-@IsString()
-@IsOptional()
-@Transform(({ value }) => value === '' ? undefined : value)
-sessionRate?: string;
-
+  @ApiProperty({
+    example: '350',
+    description: 'Tarifa por sesión',
+  })
+  @IsString()
+  @IsNotEmpty()
+  sessionRate: string;
 
   @ApiProperty({
     example: 'PSI-CL-001',

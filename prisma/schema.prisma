@@ -111,13 +111,13 @@ model Employee {
   lastName        String
   licenseNumber   String? @unique
 
-  specialtyAreaId Int
-  specialtyArea   SpecialtyArea @relation(fields: [specialtyAreaId], references: [id])
+  specialtyAreaId Int?
+  specialtyArea   SpecialtyArea? @relation(fields: [specialtyAreaId], references: [id])
 
-  contractType    ContractType
-  paymentType     PaymentType
-  baseSalary      Decimal @db.Decimal(10,2)
-  sessionRate     Decimal @db.Decimal(8,2)
+  contractType    ContractType?
+  paymentType     PaymentType?
+  baseSalary      Decimal? @db.Decimal(10,2)
+  sessionRate     Decimal? @db.Decimal(8,2)
 
   isActive        Boolean @default(true)
 
