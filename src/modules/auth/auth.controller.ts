@@ -89,6 +89,23 @@ export class AuthController {
     return this.authService.listEmployees();
   }
 
+  @Get('patients/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Obtener información de un paciente' })
+  @ApiResponse({ status: 200, description: 'Datos del paciente' })
+  @ApiResponse({ status: 404, description: 'Paciente no encontrado' })
+  getPatient(@Param('id', ParseIntPipe) id: number) {
+    return this.authService.getPatient(id);
+  }
+
+  @Get('patients')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Obtener lista de todos los pacientes' })
+  @ApiResponse({ status: 200, description: 'Lista de pacientes' })
+  listPatients() {
+    return this.authService.listPatients();
+  }
+
 
 
   

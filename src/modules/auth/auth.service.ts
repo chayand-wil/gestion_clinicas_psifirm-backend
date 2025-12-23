@@ -794,4 +794,52 @@ export class AuthService {
 
     return employees;
   }
+
+  /**
+   * Obtiene la información de un paciente específico
+   */
+  async getPatient(patientId: number) {
+    const patient = await this.prisma.patient.findUnique({
+      where: { id: patientId },
+      include: {
+        user: {
+          include: {
+            roles: {
+              include: {
+                role: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!patient) {
+      throw new BadRequestException('El paciente no existe');
+    }
+
+    return patient;
+  }
+
+  /**
+   * Obtiene la lista de todos los pacientes
+   */
+  async listPatients() {
+    const patients = await this.prisma.patient.findMany({
+      include: {
+        user: {
+          select: {
+            email: true,
+            username: true,
+            isActive: true,
+          },
+        },
+      },
+      orderBy: {
+        firstName: 'asc',
+      },
+    });
+
+    return patients;
+  }
 }
