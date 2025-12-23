@@ -1,14 +1,17 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, UseGuards, Post, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterPatientDto } from './dto/register-patient.dto';
 import { RegisterEmployeeDto } from './dto/register-employee.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendCodeDto } from './dto/resend-code.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+
 
 @ApiTags('auth')
 @Controller('auth')
@@ -24,6 +27,7 @@ export class AuthController {
   }
 
   @Post('register-patient')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Registrar nuevo paciente con perfil completo' })
   @ApiResponse({ status: 201, description: 'Paciente registrado exitosamente' })
   @ApiResponse({ status: 409, description: 'Email o usuario ya existen' })
@@ -31,13 +35,58 @@ export class AuthController {
     return this.authService.registerPatient(registerPatientDto);
   }
 
-  @Post('register-employee') 
+  @Post('register-employee')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Registrar nuevo empleado con perfil completo' })
   @ApiResponse({ status: 201, description: 'Empleado registrado exitosamente' })
   @ApiResponse({ status: 409, description: 'Email o usuario ya existen' })
   @ApiResponse({ status: 400, description: 'Área de especialidad o roles no existen' })
   registerEmployee(@Body() registerEmployeeDto: RegisterEmployeeDto) {
     return this.authService.registerEmployee(registerEmployeeDto);
+  }
+  
+  @Post('register-patient-public')
+  @ApiOperation({ summary: 'Registrar nuevo paciente con perfil completo' })
+  @ApiResponse({ status: 201, description: 'Paciente registrado exitosamente' })
+  @ApiResponse({ status: 409, description: 'Email o usuario ya existen' })
+  registerPatientP(@Body() registerPatientDto: RegisterPatientDto) {
+    return this.authService.registerPatient(registerPatientDto);
+  }
+
+  @Post('register-employee-public')
+  @ApiOperation({ summary: 'Registrar nuevo empleado con perfil completo' })
+  @ApiResponse({ status: 201, description: 'Empleado registrado exitosamente' })
+  @ApiResponse({ status: 409, description: 'Email o usuario ya existen' })
+  @ApiResponse({ status: 400, description: 'Área de especialidad o roles no existen' })
+  registerEmployeeP(@Body() registerEmployeeDto: RegisterEmployeeDto) {
+    return this.authService.registerEmployee(registerEmployeeDto);
+  }
+
+  @Post('update-employee')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Actualizar información de un empleado existente' })
+  @ApiResponse({ status: 200, description: 'Empleado actualizado exitosamente' })
+  @ApiResponse({ status: 400, description: 'Empleado, roles o área de especialidad no existen' })
+  @ApiResponse({ status: 409, description: 'Email ya está en uso' })
+  updateEmployee(@Body() updateEmployeeDto: UpdateEmployeeDto) {
+    return this.authService.updateEmployee(updateEmployeeDto);
+  }
+
+  @Get('employees/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Obtener información de un empleado' })
+  @ApiResponse({ status: 200, description: 'Datos del empleado' })
+  @ApiResponse({ status: 404, description: 'Empleado no encontrado' })
+  getEmployee(@Param('id', ParseIntPipe) id: number) {
+    return this.authService.getEmployee(id);
+  }
+
+  @Get('employees')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Obtener lista de todos los empleados' })
+  @ApiResponse({ status: 200, description: 'Lista de empleados' })
+  listEmployees() {
+    return this.authService.listEmployees();
   }
 
 
