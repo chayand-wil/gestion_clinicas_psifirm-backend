@@ -468,7 +468,15 @@ export class AuthService {
       include: {
         roles: {
           include: {
-            role: true,
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true,
+                  },
+                },
+              },
+            },
           },
         },
         employee: true,
@@ -502,17 +510,30 @@ export class AuthService {
       .map((relation) => relation.role?.name)
       .filter((name): name is string => Boolean(name));
 
+    // Recopilar permisos únicos de todos los roles del usuario
+    const permissionsSet = new Set<string>();
+    user.roles.forEach((userRole) => {
+      userRole.role?.permissions?.forEach((rolePermission) => {
+        if (rolePermission.permission?.name) {
+          permissionsSet.add(rolePermission.permission.name);
+        }
+      });
+    });
+    const permissions = Array.from(permissionsSet);
+
+    // Payload mínimo para JWT: solo identificador, rol principal y jti corto
+    const primaryRole = roleNames[0] ?? 'usuario';
     const payload = {
       sub: user.id,
-      email: user.email,
-      roles: roleNames,
+      role: primaryRole,
+      jti: randomBytes(8).toString('hex'),
     };
 
     const displayName = user.employee
       ? `${user.employee.firstName} ${user.employee.lastName}`
       : user.patient
         ? `${user.patient.firstName} ${user.patient.lastName}`
-        : user.username;
+        : user.username;  
 
     return {
       access_token: this.jwtService.sign(payload),
@@ -524,6 +545,7 @@ export class AuthService {
         roles: roleNames,
         employeeId: user.employee?.id,
         patientId: user.patient?.id,
+        permissions,
       },
     };
   }
