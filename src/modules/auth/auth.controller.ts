@@ -99,16 +99,12 @@ export class AuthController {
   }
 
   @Get('patients')
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Obtener lista de todos los pacientes' })
   @ApiResponse({ status: 200, description: 'Lista de pacientes' })
   listPatients() {
     return this.authService.listPatients();
   }
-
-
-
-  
 
 
   

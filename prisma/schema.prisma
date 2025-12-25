@@ -184,6 +184,7 @@ model Patient {
 
 model MedicalRecord {
   id              Int    @id @default(autoincrement())
+  /// Campo que almacena un número de registro único para identificar de manera exclusiva cada entrada en la base de datos.
   recordNumber    String @unique
 
   patientId       Int    // ✅ CAMBIO: Sin @unique - Permite múltiples historias por paciente
