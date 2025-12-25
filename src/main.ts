@@ -2,6 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
+import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
+import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 
 
 async function bootstrap() {
@@ -14,6 +17,15 @@ async function bootstrap() {
     whitelist: true,
     transform: true,
   }));
+
+  // Global interceptors: serialize BigInt first, then wrap responses
+  app.useGlobalInterceptors(
+    new BigIntSerializerInterceptor(),
+    new ApiResponseInterceptor(),
+  );
+
+  // Global error filter to standardize error responses
+  app.useGlobalFilters(new ApiExceptionFilter());
     // Enable CORS so the frontend (Vite at :5173) can call this API during development.
     // Configure allowed origin via FRONTEND_ORIGIN env var, fallback to localhost:5173.
 const envOrigin = process.env.FRONTEND_ORIGIN;
