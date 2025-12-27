@@ -196,7 +196,7 @@ model MedicalRecord {
   specialtyAreaId Int
   specialtyArea   SpecialtyArea @relation(fields: [specialtyAreaId], references: [id])
 
-  status          RecordStatus
+  status          RecordStatus    
   isCurrent       Boolean @default(true) // ✅ NUEVO: Indica si es el expediente activo
   openedAt        DateTime
   closedAt        DateTime?

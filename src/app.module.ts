@@ -6,10 +6,11 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { SpecialtyAreaModule } from './modules/specialty-area/specialty-area.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
 
 @Module({
-  imports: [PrismaModule, AuthModule, SpecialtyAreaModule, RolesModule],
+  imports: [PrismaModule, AuthModule, SpecialtyAreaModule, RolesModule, AppointmentsModule],
   controllers: [
     AppController,
   ],
