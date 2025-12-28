@@ -190,13 +190,13 @@ model MedicalRecord {
   patientId       Int    // ✅ CAMBIO: Sin @unique - Permite múltiples historias por paciente
   patient         Patient @relation(fields: [patientId], references: [id])
 
-  psychologistId  Int
+  psychologistId  Int  
   psychologist    Employee @relation(fields: [psychologistId], references: [id])
 
   specialtyAreaId Int
   specialtyArea   SpecialtyArea @relation(fields: [specialtyAreaId], references: [id])
 
-  status          RecordStatus    
+  status          RecordStatus    // Estado del expediente
   isCurrent       Boolean @default(true) // ✅ NUEVO: Indica si es el expediente activo
   openedAt        DateTime
   closedAt        DateTime?
@@ -234,27 +234,26 @@ model InitialAssessment {
   familyHistory    String @db.Text
 
   // Sección 3.2: Historia Personal
-  personalHistory       String @db.Text
-  developmentalHistory  String? @db.Text
-  academicHistory       String? @db.Text
-  medicalHistory        String? @db.Text
-  currentMedication     String? @db.Text
-  drugConsumption       String? @db.Text
+  personalHistory       String @db.Text  // Antecedentes relevantes
+  developmentalHistory  String? @db.Text  // Historia del desarrollo
+  academicHistory       String? @db.Text  // Historia académica
+  medicalHistory        String? @db.Text  // Historia médica
+  currentMedication     String? @db.Text  // Medicación actual
+  drugConsumption       String? @db.Text  // Consumo de drogas
+  previousTreatment        Boolean @default(false) // ¿Ha recibido tratamiento psicológico previo?
+  previousTreatmentDetails String? @db.Text   // Detalles del tratamiento previo
 
-  previousTreatment        Boolean @default(false)
-  previousTreatmentDetails String? @db.Text
-
-  hospitalizations        Boolean @default(false)
-  hospitalizationDetails  String? @db.Text
+  hospitalizations        Boolean @default(false)  // ¿Ha sido hospitalizado por razones psicológicas?
+  hospitalizationDetails  String? @db.Text  // Detalles de hospitalización
 
   // Sección 4.1: Estado Actual (Escalas Likert 1-5)
-  moodLevel        Int // 1-5
-  anxietyLevel     Int // 1-5
-  socialFunction   Int // 1-5
-  sleepQuality     Int // 1-5
-  appetite         Int // 1-5
+  moodLevel        Int // 1-5  // Estado de ánimo
+  anxietyLevel     Int // 1-5  // Nivel de ansiedad
+  socialFunction   Int // 1-5  // Funcionamiento social
+  sleepQuality     Int // 1-5  // Calidad del sueño
+  appetite         Int // 1-5  // Apetito
 
-  generalObservations String? @db.Text
+  generalObservations String? @db.Text  // Observaciones generales
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -285,7 +284,7 @@ model PsychologicalTest {
 model Diagnosis {
   id           Int    @id @default(autoincrement())
   recordId     Int
-  cie11Code    String
+  cie11Code    String  // Código CIE-11
   type         DiagnosisType
   description  String @db.Text
 
@@ -300,10 +299,10 @@ model DiagnosisDetail {
   id               Int    @id @default(autoincrement())
   recordId         Int    @unique // Solo una evaluación de factores por historia
 
-  predisponentes   String @db.Text
-  precipitantes    String @db.Text
-  mantenedores     String @db.Text
-  functioningLevel Int // 0-100
+  predisponentes   String @db.Text  // Factores predisponentes
+  precipitantes    String @db.Text  // Factores precipitantes
+  mantenedores     String @db.Text   // Factores mantenedores
+  functioningLevel Int // 0-100  // Nivel de funcionamiento global
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -319,17 +318,17 @@ model TreatmentPlan {
   id               Int    @id @default(autoincrement())
   recordId         Int    @unique
 
-  shortTermGoal    String @db.Text
-  mediumTermGoal   String? @db.Text
-  longTermGoal     String? @db.Text
+  shortTermGoal    String @db.Text  // Metas a corto plazo
+  mediumTermGoal   String? @db.Text  // Metas a mediano plazo
+  longTermGoal     String? @db.Text  // Metas a largo plazo
 
-  modality         TherapyModality
-  therapeuticFocus TherapeuticApproach
-  frequency        SessionFrequency
+  modality         TherapyModality  // Modalidad de terapia
+  therapeuticFocus TherapeuticApproach  // Enfoque terapéutico
+  frequency        SessionFrequency  // Frecuencia de sesiones
 
-  sessionsPerWeek  Int @default(1)
-  estimatedWeeks   Int?
-  costPerSession   Decimal @db.Decimal(8,2)
+  sessionsPerWeek  Int @default(1)      // Número de sesiones por semana
+  estimatedWeeks   Int?  // Duración estimada en semanas
+  costPerSession   Decimal @db.Decimal(8,2)  // Costo por sesión
 
   startDate        DateTime @default(now())
   estimatedEndDate DateTime?
@@ -347,21 +346,21 @@ model TreatmentPlan {
 
 model TherapySession {
   id            Int    @id @default(autoincrement())
-  recordId      Int
+  recordId      Int  // Historia clínica asociada
   employeeId    Int
 
-  sessionNumber Int
+  sessionNumber Int  // Número secuencial de la sesión
   date          DateTime
-  attended      Boolean
+  attended      Boolean  // Si el paciente asistió o no
 
-  absenceReason   String? @db.Text // Cuando attended = false
-  interventions   String @db.Text
-  patientResponse String @db.Text
-  assignedTasks   String @db.Text
-  observations    String @db.Text
+  absenceReason   String? @db.Text // Motivo de ausencia si no asistió
+  interventions   String @db.Text   //Técnicas y estrategias aplicadas
+  patientResponse String @db.Text  //Reacción y participación del paciente
+  assignedTasks   String @db.Text  //Tareas o actividades para el paciente
+  observations    String @db.Text //Notas adicionales de la sesión
 
-  nextSessionDate  DateTime?
-  digitalSignature String? @db.Text
+  nextSessionDate  DateTime?  // Fecha propuesta para la próxima sesión
+  digitalSignature String? @db.Text  // Firma digital del terapeuta
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -419,10 +418,10 @@ model PeriodicEvaluation {
   recordId         Int
   type             EvaluationType
 
-  observedProgress String @db.Text
-  achievedGoals    String @db.Text
-  pendingGoals     String @db.Text
-  recommendations  String @db.Text
+  observedProgress String @db.Text  // Descripción del progreso observado
+  achievedGoals    String @db.Text  // Metas alcanzadas
+  pendingGoals     String @db.Text  // Metas pendientes
+  recommendations  String @db.Text  // Recomendaciones
 
   progressScale    Int // 1-10 estrellas
 
@@ -440,14 +439,14 @@ model TherapeuticDischarge {
   id            Int    @id @default(autoincrement())
   recordId      Int    @unique
 
-  dischargeDate      DateTime
+  dischargeDate      DateTime    // Fecha del alta
   reason             DischargeReason
-  patientStatus      String @db.Text
-  recommendations    String @db.Text
-  followUpPlan       String? @db.Text
+  patientStatus      String @db.Text // Estado del paciente al alta
+  recommendations    String @db.Text  // Recomendaciones
+  followUpPlan       String? @db.Text // Plan de seguimiento
 
-  patientSignature   String? @db.Text
-  therapistSignature String @db.Text
+  patientSignature   String? @db.Text   // Firma digital del paciente
+  therapistSignature String @db.Text   // Firma digital del terapeuta
 
   createdAt          DateTime @default(now())
 
@@ -541,8 +540,8 @@ model Payment {
   id        Int     @id @default(autoincrement())
   patientId Int
   amount    Decimal @db.Decimal(10,2)
-  status    PaymentStatus
-  paidAt    DateTime?
+  status    PaymentStatus  // Estado del pago
+  paidAt    DateTime?  // Fecha de pago si está pagado
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -556,12 +555,12 @@ model Invoice {
   number    String @unique
   paymentId Int    @unique
 
-  issueDate DateTime @default(now())
-  dueDate   DateTime?
+  issueDate DateTime @default(now())  // Fecha de emisión
+  dueDate   DateTime?  // Fecha de vencimiento
 
-  subtotal  Decimal @db.Decimal(10,2)
-  taxes     Decimal @db.Decimal(10,2)
-  total     Decimal @db.Decimal(10,2)
+  subtotal  Decimal @db.Decimal(10,2)  // Monto antes de impuestos
+  taxes     Decimal @db.Decimal(10,2)  // Impuestos aplicados
+  total     Decimal @db.Decimal(10,2)  // Monto total a pagar
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

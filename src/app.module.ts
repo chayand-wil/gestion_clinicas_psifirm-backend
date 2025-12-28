@@ -8,10 +8,11 @@ import { SpecialtyAreaModule } from './modules/specialty-area/specialty-area.mod
 import { RolesModule } from './modules/roles/roles.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { EmployeeScheduleModule } from './modules/employee-schedule/employee-schedule.module';
+import { MedicalRecordsModule } from './modules/medical-records/medical-records.module';
 import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
 
 @Module({
-  imports: [PrismaModule, AuthModule, SpecialtyAreaModule, RolesModule, AppointmentsModule, EmployeeScheduleModule],
+  imports: [PrismaModule, AuthModule, SpecialtyAreaModule, RolesModule, AppointmentsModule, EmployeeScheduleModule, MedicalRecordsModule],
   controllers: [
     AppController,
   ],

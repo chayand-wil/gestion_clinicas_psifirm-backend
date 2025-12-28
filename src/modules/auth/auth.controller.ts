@@ -82,7 +82,7 @@ export class AuthController {
   }
 
   @Get('employees')
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Obtener lista de todos los empleados' })
   @ApiResponse({ status: 200, description: 'Lista de empleados' })
   listEmployees() {
