@@ -141,12 +141,24 @@ export class MedicalRecordsService {
 
   // TreatmentPlan
   async createTreatmentPlan(data: CreateTreatmentPlanDto) {
-    const exists = await this.prisma.treatmentPlan.findUnique({ where: { recordId: data.recordId } });
-    if (exists) throw new BadRequestException('Ya existe un plan de tratamiento para esta historia');
-
-    return this.prisma.treatmentPlan.create({
-      data: {
+    return this.prisma.treatmentPlan.upsert({
+      where: { recordId: data.recordId },
+      create: {
         recordId: data.recordId,
+        shortTermGoal: data.shortTermGoal,
+        mediumTermGoal: data.mediumTermGoal ?? undefined,
+        longTermGoal: data.longTermGoal ?? undefined,
+        modality: data.modality,
+        therapeuticFocus: data.therapeuticFocus,
+        frequency: data.frequency,
+        sessionsPerWeek: data.sessionsPerWeek ?? 1,
+        estimatedWeeks: data.estimatedWeeks ?? undefined,
+        costPerSession: data.costPerSession,
+        startDate: data.startDate ? new Date(data.startDate) : undefined,
+        estimatedEndDate: data.estimatedEndDate ? new Date(data.estimatedEndDate) : undefined,
+        isActive: data.isActive ?? undefined,
+      },
+      update: {
         shortTermGoal: data.shortTermGoal,
         mediumTermGoal: data.mediumTermGoal ?? undefined,
         longTermGoal: data.longTermGoal ?? undefined,

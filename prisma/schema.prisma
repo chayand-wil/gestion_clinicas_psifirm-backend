@@ -316,7 +316,7 @@ model DiagnosisDetail {
 
 model TreatmentPlan {
   id               Int    @id @default(autoincrement())
-  recordId         Int    @unique
+  recordId         Int    @unique  // Una historia clínica tiene un solo plan de tratamiento
 
   shortTermGoal    String @db.Text  // Metas a corto plazo
   mediumTermGoal   String? @db.Text  // Metas a mediano plazo
