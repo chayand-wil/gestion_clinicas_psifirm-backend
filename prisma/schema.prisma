@@ -368,6 +368,7 @@ model TherapySession {
   record       MedicalRecord @relation(fields: [recordId], references: [id])
   employee     Employee      @relation(fields: [employeeId], references: [id])
   sessionTags  SessionTag[]  // ✅ NUEVO: Relación con tags
+  appointment  Appointment?  @relation("AppointmentSession")
 
   @@unique([recordId, sessionNumber])
 }
@@ -528,17 +529,22 @@ model Appointment {
   cost        Decimal @db.Decimal(8,2)
 
   sessionId   Int? @unique // Vincula con sesión realizada
+  session     TherapySession? @relation("AppointmentSession", fields: [sessionId], references: [id], onDelete: SetNull)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   patient  Patient  @relation(fields: [patientId], references: [id])
   employee Employee @relation(fields: [employeeId], references: [id])
+  payments Payment[] // ✅ NUEVO: Relación con pagos
+
 }
 
 model Payment {
   id        Int     @id @default(autoincrement())
   patientId Int
+  appointmentId Int?    // ✅ NUEVO: Vínculo opcional con cita
+
   amount    Decimal @db.Decimal(10,2)
   status    PaymentStatus  // Estado del pago
   paidAt    DateTime?  // Fecha de pago si está pagado
@@ -548,6 +554,8 @@ model Payment {
 
   patient Patient @relation(fields: [patientId], references: [id])
   invoice Invoice?
+  appointment Appointment? @relation(fields: [appointmentId], references: [id]) // ✅ NUEVO
+
 }
 
 model Invoice {
