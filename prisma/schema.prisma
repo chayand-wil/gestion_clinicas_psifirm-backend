@@ -206,7 +206,6 @@ model MedicalRecord {
 
   initialAssessment     InitialAssessment?
   diagnoses             Diagnosis[]
-  diagnosisDetail       DiagnosisDetail?
   sessions              TherapySession[]
   periodicEvaluations   PeriodicEvaluation[]
   psychologicalTests    PsychologicalTest[]
@@ -293,11 +292,12 @@ model Diagnosis {
   updatedAt    DateTime @updatedAt
 
   record MedicalRecord @relation(fields: [recordId], references: [id])
+  diagnosisDetails DiagnosisDetail[]  // ✅ NUEVO: Múltiples análisis de factores por diagnóstico
 }
 
 model DiagnosisDetail {
   id               Int    @id @default(autoincrement())
-  recordId         Int    @unique // Solo una evaluación de factores por historia
+  diagnosisId      Int    // ✅ CAMBIO: Relación con Diagnosis en lugar de recordId único
 
   predisponentes   String @db.Text  // Factores predisponentes
   precipitantes    String @db.Text  // Factores precipitantes
@@ -307,7 +307,7 @@ model DiagnosisDetail {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  record MedicalRecord @relation(fields: [recordId], references: [id])
+  diagnosis Diagnosis @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)  // ✅ CAMBIO: Relación actualizada
 }
 
 //////////////////////////////////////////////////////

@@ -2,9 +2,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsInt, IsString } from 'class-validator';
 
 export class CreateDiagnosisDetailDto {
-  @ApiProperty({ example: 1 })
+  @ApiProperty({ example: 1, description: 'ID del diagnóstico' })
   @IsInt()
-  recordId: number;
+  diagnosisId: number;
 
   @ApiProperty()
   @IsString()

@@ -17,6 +17,9 @@ import { CreatePsychologicalTestDto } from './dto/create-psychological-test.dto'
 import { CreateDiagnosisDto } from './dto/create-diagnosis.dto';
 import { CreateDiagnosisDetailDto } from './dto/create-diagnosis-detail.dto';
 import { CreateTherapySessionDto } from './dto/create-therapy-session.dto';
+import { CreateTreatmentPlanDto } from './dto/create-treatment-plan.dto';
+import { CreatePeriodicEvaluationDto } from './dto/create-periodic-evaluation.dto';
+import { CreateTherapeuticDischargeDto } from './dto/create-therapeutic-discharge.dto';
 
 @ApiTags('medical-records')
 @Controller('medical-records')
@@ -97,16 +100,16 @@ export class MedicalRecordsController {
     return this.service.findDiagnoses(id);
   }
 
-  // Diagnosis detail
-  @Post(':id/diagnosis-detail')
+  // Diagnosis details (múltiples por diagnóstico)
+  @Post(':id/diagnosis-details')
   createDiagnosisDetail(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateDiagnosisDetailDto) {
-    dto.recordId = id;
+    // id es el recordId, dto.diagnosisId ya debe venir en el cuerpo
     return this.service.createDiagnosisDetail(dto);
   }
 
-  @Get(':id/diagnosis-detail')
-  getDiagnosisDetail(@Param('id', ParseIntPipe) id: number) {
-    return this.service.getDiagnosisDetail(id);
+  @Get(':id/diagnosis-details/:diagnosisId')
+  getDiagnosisDetails(@Param('diagnosisId', ParseIntPipe) diagnosisId: number) {
+    return this.service.getDiagnosisDetails(diagnosisId);
   }
 
   // Therapy sessions
@@ -119,5 +122,47 @@ export class MedicalRecordsController {
   @Get(':id/sessions')
   findTherapySessions(@Param('id', ParseIntPipe) id: number) {
     return this.service.findTherapySessions(id);
+  }
+
+  // Treatment plan
+  @Post(':id/treatment-plan')
+  @ApiOperation({ summary: 'Crear plan de tratamiento para una historia' })
+  createTreatmentPlan(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateTreatmentPlanDto) {
+    dto.recordId = id;
+    return this.service.createTreatmentPlan(dto);
+  }
+
+  @Get(':id/treatment-plan')
+  @ApiOperation({ summary: 'Obtener plan de tratamiento por historia' })
+  getTreatmentPlan(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getTreatmentPlan(id);
+  }
+
+  // Periodic evaluations
+  @Post(':id/periodic-evaluations')
+  @ApiOperation({ summary: 'Registrar evaluación periódica de una historia' })
+  createPeriodicEvaluation(@Param('id', ParseIntPipe) id: number, @Body() dto: CreatePeriodicEvaluationDto) {
+    dto.recordId = id;
+    return this.service.createPeriodicEvaluation(dto);
+  }
+
+  @Get(':id/periodic-evaluations')
+  @ApiOperation({ summary: 'Listar evaluaciones periódicas de una historia' })
+  findPeriodicEvaluations(@Param('id', ParseIntPipe) id: number) {
+    return this.service.findPeriodicEvaluations(id);
+  }
+
+  // Therapeutic discharge
+  @Post(':id/therapeutic-discharge')
+  @ApiOperation({ summary: 'Registrar alta terapéutica para una historia' })
+  createTherapeuticDischarge(@Param('id', ParseIntPipe) id: number, @Body() dto: CreateTherapeuticDischargeDto) {
+    dto.recordId = id;
+    return this.service.createTherapeuticDischarge(dto);
+  }
+
+  @Get(':id/therapeutic-discharge')
+  @ApiOperation({ summary: 'Obtener alta terapéutica por historia' })
+  getTherapeuticDischarge(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getTherapeuticDischarge(id);
   }
 }
