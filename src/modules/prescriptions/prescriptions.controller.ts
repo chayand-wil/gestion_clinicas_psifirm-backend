@@ -41,6 +41,15 @@ export class PrescriptionsController {
     return this.service.findAll({ recordId, productId, prescribedBy, isActive });
   }
 
+  @Get('deliveries/billing')
+  @ApiOperation({ summary: 'Listar entregas para facturación' })
+  @ApiQuery({ name: 'paid', required: false, type: Boolean, description: 'true = pagadas, false = pendientes' })
+  findDeliveriesForBilling(
+    @Query('paid', new ParseBoolPipe({ optional: true })) paid?: boolean,
+  ) {
+    return this.service.findDeliveriesForBilling(paid);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obtener prescripción por ID' })
   findOne(@Param('id', ParseIntPipe) id: number) {

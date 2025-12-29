@@ -81,6 +81,7 @@ export class AppointmentsService {
     status?: AppointmentStatus;
     fromDate?: Date;
     toDate?: Date;
+    hasPendingPayment?: boolean;
   }) {
     const where: any = {};
 
@@ -106,6 +107,29 @@ export class AppointmentsService {
       }
     }
 
+    // ✅ NUEVO: Filtrar citas sin pago o con pago pendiente
+    if (filters?.hasPendingPayment === true) {
+      where.OR = [
+        // Citas sin ningún pago asociado
+        { payments: { none: {} } },
+        // Citas con pagos pero todos pendientes o parciales
+        {
+          payments: {
+            every: {
+              status: { in: ['PENDIENTE', 'PARCIAL'] }
+            }
+          }
+        }
+      ];
+    } else if (filters?.hasPendingPayment === false) {
+      // Citas con al menos un pago completo
+      where.payments = {
+        some: {
+          status: 'PAGADO'
+        }
+      };
+    }
+
     return this.prisma.appointment.findMany({
       where,
       include: {
@@ -123,6 +147,14 @@ export class AppointmentsService {
             id: true,
             firstName: true,
             lastName: true,
+          },
+        },
+        payments: {
+          select: {
+            id: true,
+            amount: true,
+            status: true,
+            paidAt: true,
           },
         },
       },

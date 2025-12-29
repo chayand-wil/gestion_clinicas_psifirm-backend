@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InventoryMovementType } from '@prisma/client';
+import { InventoryMovementType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   CreateDeliveryDto,
@@ -173,6 +173,56 @@ export class PrescriptionsService {
       where: { prescriptionId },
       include: {
         employee: { select: { id: true, firstName: true, lastName: true } },
+      },
+      orderBy: { deliveredAt: 'desc' },
+    });
+  }
+
+  async findDeliveriesForBilling(paid?: boolean) {
+    const where: Prisma.PrescriptionDeliveryWhereInput = {};
+
+    // paid = true  -> entregas ya facturadas (tienen invoiceItem)
+    // paid = false -> entregas sin facturar (invoiceItem es null)
+    if (paid === true) {
+      where.invoiceItem = { isNot: null };
+    } else if (paid === false) {
+      where.invoiceItem = { is: null };
+    }
+
+    return this.prisma.prescriptionDelivery.findMany({
+      where,
+      include: {
+        employee: { select: { id: true, firstName: true, lastName: true } },
+        prescription: {
+          include: {
+            product: { select: { id: true, name: true, price: true } },
+            record: {
+              select: {
+                id: true,
+                patient: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    phone: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        invoiceItem: {
+          include: {
+            invoice: {
+              select: {
+                id: true,
+                number: true,
+                paymentId: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { deliveredAt: 'desc' },
     });

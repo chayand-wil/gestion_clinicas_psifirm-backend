@@ -47,6 +47,7 @@ export class AppointmentsController {
   @ApiQuery({ name: 'status', required: false, type: String })
   @ApiQuery({ name: 'fromDate', required: false, type: String })
   @ApiQuery({ name: 'toDate', required: false, type: String })
+  @ApiQuery({ name: 'hasPendingPayment', required: false, type: Boolean, description: 'Filtrar citas con pago pendiente' })
   @ApiResponse({
     status: 200,
     description: 'Lista de citas',
@@ -62,6 +63,7 @@ export class AppointmentsController {
     status?: AppointmentStatus,
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string,
+    @Query('hasPendingPayment') hasPendingPayment?: string,
   ) {
     return this.appointmentsService.findAll({
       patientId,
@@ -69,6 +71,7 @@ export class AppointmentsController {
       status,
       fromDate: fromDate ? new Date(fromDate) : undefined,
       toDate: toDate ? new Date(toDate) : undefined,
+      hasPendingPayment: hasPendingPayment === 'true' ? true : hasPendingPayment === 'false' ? false : undefined,
     });
   }
 
