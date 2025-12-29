@@ -367,7 +367,7 @@ model TherapySession {
 
   record       MedicalRecord @relation(fields: [recordId], references: [id])
   employee     Employee      @relation(fields: [employeeId], references: [id])
-  sessionTags  SessionTag[]  // ✅ NUEVO: Relación con tags
+  sessionTags  SessionTag[]  //  Relación con tags
   appointment  Appointment?  @relation("AppointmentSession")
 
   @@unique([recordId, sessionNumber])
@@ -485,11 +485,11 @@ model InventoryMovement {
 model Prescription {
   id               Int    @id @default(autoincrement())
   recordId         Int
-  productId        Int
-  prescribedBy     Int
+  productId        Int  // Producto prescrito
+  prescribedBy     Int  // Empleado que prescribe
 
-  dosage           String
-  instructions     String
+  dosage           String  // Ej: "2 veces al día"
+  instructions     String  // Ej: "Después de las comidas"
 
   prescriptionDate DateTime @default(now())
   startDate        DateTime
