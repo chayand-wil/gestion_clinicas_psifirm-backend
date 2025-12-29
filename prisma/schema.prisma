@@ -12,47 +12,47 @@ datasource db {
 //////////////////////////////////////////////////////
 
 model User {
-  id                Int      @id @default(autoincrement())
-  email             String   @unique
-  username          String   @unique
-  passwordHash      String
-  isActive          Boolean  @default(true)
-  isEmailVerified   Boolean  @default(false)
-  lastLogin         DateTime?
+  id              Int       @id @default(autoincrement())
+  email           String    @unique
+  username        String    @unique
+  passwordHash    String
+  isActive        Boolean   @default(true)
+  isEmailVerified Boolean   @default(false)
+  lastLogin       DateTime?
 
   recoveryToken     String?
   recoveryExpiresAt DateTime?
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  roles             UserRole[]
-  employee          Employee?
-  patient           Patient?
-  auditLogs         AuditLog[]
+  roles              UserRole[]
+  employee           Employee?
+  patient            Patient?
+  auditLogs          AuditLog[]
   emailVerifications EmailVerification[]
 }
 
 model EmailVerification {
-  id        Int       @id @default(autoincrement())
-  userId    Int
-  code      String    @db.Char(4)
-  attempts  Int       @default(0)
-  maxAttempts Int     @default(3)
-  expiresAt DateTime
-  isUsed    Boolean   @default(false)
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  code        String    @db.Char(4)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  expiresAt   DateTime
+  isUsed      Boolean   @default(false)
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
 
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, isUsed])
   @@index([expiresAt])
 }
 
 model Role {
-  id          Int    @id @default(autoincrement())
-  name        String @unique
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
   description String?
 
   users       UserRole[]
@@ -60,12 +60,12 @@ model Role {
 }
 
 model Permission {
-  id          Int    @id @default(autoincrement())
-  name        String @unique
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
   module      String
   description String?
 
-  roles       RolePermission[]
+  roles RolePermission[]
 }
 
 model UserRole {
@@ -94,32 +94,32 @@ model RolePermission {
 
 model SpecialtyArea {
   id          Int     @id @default(autoincrement())
-  name        String @unique
+  name        String  @unique
   description String?
   isActive    Boolean @default(true)
 
-  employees        Employee[]
-  medicalRecords   MedicalRecord[]
+  employees      Employee[]
+  medicalRecords MedicalRecord[]
 }
 
 model Employee {
-  id              Int    @id @default(autoincrement())
-  userId          Int    @unique
-  user            User   @relation(fields: [userId], references: [id])
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
 
-  firstName       String
-  lastName        String
-  licenseNumber   String? @unique
+  firstName     String
+  lastName      String
+  licenseNumber String? @unique
 
   specialtyAreaId Int?
   specialtyArea   SpecialtyArea? @relation(fields: [specialtyAreaId], references: [id])
 
-  contractType    ContractType?
-  paymentType     PaymentType?
-  baseSalary      Decimal? @db.Decimal(10,2)
-  sessionRate     Decimal? @db.Decimal(8,2)
+  contractType ContractType?
+  paymentType  PaymentType?
+  baseSalary   Decimal?      @db.Decimal(10, 2)
+  sessionRate  Decimal?      @db.Decimal(8, 2)
 
-  isActive        Boolean @default(true)
+  isActive Boolean @default(true)
 
   schedules              EmployeeSchedule[]
   payrolls               Payroll[]
@@ -131,7 +131,7 @@ model Employee {
 }
 
 model EmployeeSchedule {
-  id         Int     @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   employeeId Int
   dayOfWeek  WeekDay
   startTime  DateTime
@@ -145,33 +145,33 @@ model EmployeeSchedule {
 //////////////////////////////////////////////////////
 
 model Patient {
-  id             Int     @id @default(autoincrement())
-  userId         Int?    @unique
-  user           User? @relation(fields: [userId], references: [id])
+  id     Int   @id @default(autoincrement())
+  userId Int?  @unique
+  user   User? @relation(fields: [userId], references: [id])
 
-  firstName      String
-  lastName       String
-  birthDate      DateTime
-  gender         Gender
-  civilStatus    CivilStatus
+  firstName   String
+  lastName    String
+  birthDate   DateTime
+  gender      Gender
+  civilStatus CivilStatus
 
   occupation     String
   educationLevel EducationLevel
 
-  phone          String
-  email          String?
-  address        String?
+  phone   String
+  email   String?
+  address String?
 
   emergencyName         String
   emergencyPhone        String
   emergencyRelationship Relationship
 
-  alcoholUse    AlcoholLevel
-  tobaccoUse    TobaccoLevel
+  alcoholUse AlcoholLevel
+  tobaccoUse TobaccoLevel
 
-  isActive      Boolean @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   medicalRecords MedicalRecord[] // ✅ CAMBIO: Plural - Un paciente puede tener múltiples historias
   payments       Payment[]
@@ -183,35 +183,35 @@ model Patient {
 //////////////////////////////////////////////////////
 
 model MedicalRecord {
-  id              Int    @id @default(autoincrement())
+  id           Int    @id @default(autoincrement())
   /// Campo que almacena un número de registro único para identificar de manera exclusiva cada entrada en la base de datos.
-  recordNumber    String @unique
+  recordNumber String @unique
 
-  patientId       Int    // ✅ CAMBIO: Sin @unique - Permite múltiples historias por paciente
-  patient         Patient @relation(fields: [patientId], references: [id])
+  patientId Int // ✅ CAMBIO: Sin @unique - Permite múltiples historias por paciente
+  patient   Patient @relation(fields: [patientId], references: [id])
 
-  psychologistId  Int  
-  psychologist    Employee @relation(fields: [psychologistId], references: [id])
+  psychologistId Int
+  psychologist   Employee @relation(fields: [psychologistId], references: [id])
 
   specialtyAreaId Int
   specialtyArea   SpecialtyArea @relation(fields: [specialtyAreaId], references: [id])
 
-  status          RecordStatus    // Estado del expediente
-  isCurrent       Boolean @default(true) // ✅ NUEVO: Indica si es el expediente activo
-  openedAt        DateTime
-  closedAt        DateTime?
+  status    RecordStatus // Estado del expediente
+  isCurrent Boolean      @default(true) // ✅ NUEVO: Indica si es el expediente activo
+  openedAt  DateTime
+  closedAt  DateTime?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  initialAssessment     InitialAssessment?
-  diagnoses             Diagnosis[]
-  sessions              TherapySession[]
-  periodicEvaluations   PeriodicEvaluation[]
-  psychologicalTests    PsychologicalTest[]
-  treatmentPlan         TreatmentPlan?
-  therapeuticDischarge  TherapeuticDischarge?
-  prescriptions         Prescription[]
+  initialAssessment    InitialAssessment?
+  diagnoses            Diagnosis[]
+  sessions             TherapySession[]
+  periodicEvaluations  PeriodicEvaluation[]
+  psychologicalTests   PsychologicalTest[]
+  treatmentPlan        TreatmentPlan?
+  therapeuticDischarge TherapeuticDischarge?
+  prescriptions        Prescription[]
 
   @@index([patientId, isCurrent]) // ✅ NUEVO: Índice para búsquedas rápidas
 }
@@ -221,41 +221,41 @@ model MedicalRecord {
 //////////////////////////////////////////////////////
 
 model InitialAssessment {
-  id               Int    @id @default(autoincrement())
-  recordId         Int    @unique
-  record           MedicalRecord @relation(fields: [recordId], references: [id])
+  id       Int           @id @default(autoincrement())
+  recordId Int           @unique
+  record   MedicalRecord @relation(fields: [recordId], references: [id])
 
   // Sección 2: Procedencia y Motivo
-  referralSource      String
-  consultationReason  String @db.Text
+  referralSource     String
+  consultationReason String @db.Text
 
   // Sección 3.1: Antecedentes Familiares
-  familyHistory    String @db.Text
+  familyHistory String @db.Text
 
   // Sección 3.2: Historia Personal
-  personalHistory       String @db.Text  // Antecedentes relevantes
-  developmentalHistory  String? @db.Text  // Historia del desarrollo
-  academicHistory       String? @db.Text  // Historia académica
-  medicalHistory        String? @db.Text  // Historia médica
-  currentMedication     String? @db.Text  // Medicación actual
-  drugConsumption       String? @db.Text  // Consumo de drogas
+  personalHistory          String  @db.Text // Antecedentes relevantes
+  developmentalHistory     String? @db.Text // Historia del desarrollo
+  academicHistory          String? @db.Text // Historia académica
+  medicalHistory           String? @db.Text // Historia médica
+  currentMedication        String? @db.Text // Medicación actual
+  drugConsumption          String? @db.Text // Consumo de drogas
   previousTreatment        Boolean @default(false) // ¿Ha recibido tratamiento psicológico previo?
-  previousTreatmentDetails String? @db.Text   // Detalles del tratamiento previo
+  previousTreatmentDetails String? @db.Text // Detalles del tratamiento previo
 
-  hospitalizations        Boolean @default(false)  // ¿Ha sido hospitalizado por razones psicológicas?
-  hospitalizationDetails  String? @db.Text  // Detalles de hospitalización
+  hospitalizations       Boolean @default(false) // ¿Ha sido hospitalizado por razones psicológicas?
+  hospitalizationDetails String? @db.Text // Detalles de hospitalización
 
   // Sección 4.1: Estado Actual (Escalas Likert 1-5)
-  moodLevel        Int // 1-5  // Estado de ánimo
-  anxietyLevel     Int // 1-5  // Nivel de ansiedad
-  socialFunction   Int // 1-5  // Funcionamiento social
-  sleepQuality     Int // 1-5  // Calidad del sueño
-  appetite         Int // 1-5  // Apetito
+  moodLevel      Int // 1-5  // Estado de ánimo
+  anxietyLevel   Int // 1-5  // Nivel de ansiedad
+  socialFunction Int // 1-5  // Funcionamiento social
+  sleepQuality   Int // 1-5  // Calidad del sueño
+  appetite       Int // 1-5  // Apetito
 
-  generalObservations String? @db.Text  // Observaciones generales
+  generalObservations String? @db.Text // Observaciones generales
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 //////////////////////////////////////////////////////
@@ -263,15 +263,15 @@ model InitialAssessment {
 //////////////////////////////////////////////////////
 
 model PsychologicalTest {
-  id             Int    @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   recordId       Int
   name           String
   score          String
-  interpretation String @db.Text
+  interpretation String   @db.Text
   appliedAt      DateTime
   attachmentUrl  String? // Para PDFs/Imágenes de resultados
 
-  createdAt      DateTime @default(now())
+  createdAt DateTime @default(now())
 
   record MedicalRecord @relation(fields: [recordId], references: [id])
 }
@@ -281,33 +281,33 @@ model PsychologicalTest {
 //////////////////////////////////////////////////////
 
 model Diagnosis {
-  id           Int    @id @default(autoincrement())
-  recordId     Int
-  cie11Code    String  // Código CIE-11
-  type         DiagnosisType
-  description  String @db.Text
+  id          Int           @id @default(autoincrement())
+  recordId    Int
+  cie11Code   String // Código CIE-11
+  type        DiagnosisType
+  description String        @db.Text
 
-  isActive     Boolean @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  record MedicalRecord @relation(fields: [recordId], references: [id])
-  diagnosisDetails DiagnosisDetail[]  // ✅ NUEVO: Múltiples análisis de factores por diagnóstico
+  record           MedicalRecord     @relation(fields: [recordId], references: [id])
+  diagnosisDetails DiagnosisDetail[] // ✅ NUEVO: Múltiples análisis de factores por diagnóstico
 }
 
 model DiagnosisDetail {
-  id               Int    @id @default(autoincrement())
-  diagnosisId      Int    // ✅ CAMBIO: Relación con Diagnosis en lugar de recordId único
+  id          Int @id @default(autoincrement())
+  diagnosisId Int // ✅ CAMBIO: Relación con Diagnosis en lugar de recordId único
 
-  predisponentes   String @db.Text  // Factores predisponentes
-  precipitantes    String @db.Text  // Factores precipitantes
-  mantenedores     String @db.Text   // Factores mantenedores
+  predisponentes   String @db.Text // Factores predisponentes
+  precipitantes    String @db.Text // Factores precipitantes
+  mantenedores     String @db.Text // Factores mantenedores
   functioningLevel Int // 0-100  // Nivel de funcionamiento global
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  diagnosis Diagnosis @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)  // ✅ CAMBIO: Relación actualizada
+  diagnosis Diagnosis @relation(fields: [diagnosisId], references: [id], onDelete: Cascade) // ✅ CAMBIO: Relación actualizada
 }
 
 //////////////////////////////////////////////////////
@@ -315,27 +315,27 @@ model DiagnosisDetail {
 //////////////////////////////////////////////////////
 
 model TreatmentPlan {
-  id               Int    @id @default(autoincrement())
-  recordId         Int    @unique  // Una historia clínica tiene un solo plan de tratamiento
+  id       Int @id @default(autoincrement())
+  recordId Int @unique // Una historia clínica tiene un solo plan de tratamiento
 
-  shortTermGoal    String @db.Text  // Metas a corto plazo
-  mediumTermGoal   String? @db.Text  // Metas a mediano plazo
-  longTermGoal     String? @db.Text  // Metas a largo plazo
+  shortTermGoal  String  @db.Text // Metas a corto plazo
+  mediumTermGoal String? @db.Text // Metas a mediano plazo
+  longTermGoal   String? @db.Text // Metas a largo plazo
 
-  modality         TherapyModality  // Modalidad de terapia
-  therapeuticFocus TherapeuticApproach  // Enfoque terapéutico
-  frequency        SessionFrequency  // Frecuencia de sesiones
+  modality         TherapyModality // Modalidad de terapia
+  therapeuticFocus TherapeuticApproach // Enfoque terapéutico
+  frequency        SessionFrequency // Frecuencia de sesiones
 
-  sessionsPerWeek  Int @default(1)      // Número de sesiones por semana
-  estimatedWeeks   Int?  // Duración estimada en semanas
-  costPerSession   Decimal @db.Decimal(8,2)  // Costo por sesión
+  sessionsPerWeek Int     @default(1) // Número de sesiones por semana
+  estimatedWeeks  Int? // Duración estimada en semanas
+  costPerSession  Decimal @db.Decimal(8, 2) // Costo por sesión
 
-  startDate        DateTime @default(now())
+  startDate        DateTime  @default(now())
   estimatedEndDate DateTime?
-  isActive         Boolean @default(true)
+  isActive         Boolean   @default(true)
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   record MedicalRecord @relation(fields: [recordId], references: [id])
 }
@@ -345,30 +345,30 @@ model TreatmentPlan {
 //////////////////////////////////////////////////////
 
 model TherapySession {
-  id            Int    @id @default(autoincrement())
-  recordId      Int  // Historia clínica asociada
-  employeeId    Int
+  id         Int @id @default(autoincrement())
+  recordId   Int // Historia clínica asociada
+  employeeId Int
 
-  sessionNumber Int  // Número secuencial de la sesión
+  sessionNumber Int // Número secuencial de la sesión
   date          DateTime
-  attended      Boolean  // Si el paciente asistió o no
+  attended      Boolean // Si el paciente asistió o no
 
   absenceReason   String? @db.Text // Motivo de ausencia si no asistió
-  interventions   String @db.Text   //Técnicas y estrategias aplicadas
-  patientResponse String @db.Text  //Reacción y participación del paciente
-  assignedTasks   String @db.Text  //Tareas o actividades para el paciente
-  observations    String @db.Text //Notas adicionales de la sesión
+  interventions   String  @db.Text //Técnicas y estrategias aplicadas
+  patientResponse String  @db.Text //Reacción y participación del paciente
+  assignedTasks   String  @db.Text //Tareas o actividades para el paciente
+  observations    String  @db.Text //Notas adicionales de la sesión
 
-  nextSessionDate  DateTime?  // Fecha propuesta para la próxima sesión
-  digitalSignature String? @db.Text  // Firma digital del terapeuta
+  nextSessionDate  DateTime? // Fecha propuesta para la próxima sesión
+  digitalSignature String?   @db.Text // Firma digital del terapeuta
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  record       MedicalRecord @relation(fields: [recordId], references: [id])
-  employee     Employee      @relation(fields: [employeeId], references: [id])
-  sessionTags  SessionTag[]  //  Relación con tags
-  appointment  Appointment?  @relation("AppointmentSession")
+  record      MedicalRecord @relation(fields: [recordId], references: [id])
+  employee    Employee      @relation(fields: [employeeId], references: [id])
+  sessionTags SessionTag[] //  Relación con tags
+  appointment Appointment?  @relation("AppointmentSession")
 
   @@unique([recordId, sessionNumber])
 }
@@ -378,35 +378,35 @@ model TherapySession {
 //////////////////////////////////////////////////////
 
 model Tag {
-  id          Int    @id @default(autoincrement())
-  name        String @unique
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
   category    TagCategory
   description String?
-  isActive    Boolean @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
   sessionTags SessionTag[]
 }
 
 model SessionTag {
   sessionId Int
   tagId     Int
-  
+
   session TherapySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   tag     Tag            @relation(fields: [tagId], references: [id])
-  
+
   createdAt DateTime @default(now())
-  
+
   @@id([sessionId, tagId])
   @@index([tagId]) // Para reportes de "sesiones por tema"
 }
 
 enum TagCategory {
-  TEMA           // ej: ansiedad, depresión, duelo
-  INTERVENCION   // ej: reestructuración cognitiva, role-playing
-  EMOCION        // ej: tristeza, ira, alegría
-  SINTOMA        // ej: insomnio, ideación suicida
+  TEMA // ej: ansiedad, depresión, duelo
+  INTERVENCION // ej: reestructuración cognitiva, role-playing
+  EMOCION // ej: tristeza, ira, alegría
+  SINTOMA // ej: insomnio, ideación suicida
   OTRO
 }
 
@@ -415,19 +415,19 @@ enum TagCategory {
 //////////////////////////////////////////////////////
 
 model PeriodicEvaluation {
-  id               Int    @id @default(autoincrement())
-  recordId         Int
-  type             EvaluationType
+  id       Int            @id @default(autoincrement())
+  recordId Int
+  type     EvaluationType
 
-  observedProgress String @db.Text  // Descripción del progreso observado
-  achievedGoals    String @db.Text  // Metas alcanzadas
-  pendingGoals     String @db.Text  // Metas pendientes
-  recommendations  String @db.Text  // Recomendaciones
+  observedProgress String @db.Text // Descripción del progreso observado
+  achievedGoals    String @db.Text // Metas alcanzadas
+  pendingGoals     String @db.Text // Metas pendientes
+  recommendations  String @db.Text // Recomendaciones
 
-  progressScale    Int // 1-10 estrellas
+  progressScale Int // 1-10 estrellas
 
-  evaluatedAt      DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  evaluatedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   record MedicalRecord @relation(fields: [recordId], references: [id])
 }
@@ -437,19 +437,19 @@ model PeriodicEvaluation {
 //////////////////////////////////////////////////////
 
 model TherapeuticDischarge {
-  id            Int    @id @default(autoincrement())
-  recordId      Int    @unique
+  id       Int @id @default(autoincrement())
+  recordId Int @unique
 
-  dischargeDate      DateTime    // Fecha del alta
-  reason             DischargeReason
-  patientStatus      String @db.Text // Estado del paciente al alta
-  recommendations    String @db.Text  // Recomendaciones
-  followUpPlan       String? @db.Text // Plan de seguimiento
+  dischargeDate   DateTime // Fecha del alta
+  reason          DischargeReason
+  patientStatus   String          @db.Text // Estado del paciente al alta
+  recommendations String          @db.Text // Recomendaciones
+  followUpPlan    String?         @db.Text // Plan de seguimiento
 
-  patientSignature   String? @db.Text   // Firma digital del paciente
-  therapistSignature String @db.Text   // Firma digital del terapeuta
+  patientSignature   String? @db.Text // Firma digital del paciente
+  therapistSignature String  @db.Text // Firma digital del terapeuta
 
-  createdAt          DateTime @default(now())
+  createdAt DateTime @default(now())
 
   record MedicalRecord @relation(fields: [recordId], references: [id])
 }
@@ -459,61 +459,67 @@ model TherapeuticDischarge {
 //////////////////////////////////////////////////////
 
 model Product {
-  id            Int    @id @default(autoincrement())
-  code          String @unique
-  name          String
-  stock         Int
-  minStock      Int
-  price         Decimal @db.Decimal(10,2)
-  isMedication  Boolean
+  id           Int     @id @default(autoincrement())
+  code         String  @unique
+  name         String
+  stock        Int
+  minStock     Int
+  price        Decimal @db.Decimal(10, 2)
+  isMedication Boolean
 
   movements     InventoryMovement[]
   prescriptions Prescription[]
 }
 
 model InventoryMovement {
-  id        Int    @id @default(autoincrement())
-  productId Int
-  type      InventoryMovementType
-  quantity  Int
-  reason    String?
-  createdAt DateTime @default(now())
+  id                     Int                   @id @default(autoincrement())
+  productId              Int
+  type                   InventoryMovementType
+  quantity               Int
+  reason                 String?
+  prescriptionDeliveryId Int?                  @unique // ✅ NUEVO: Vinculación a entrega de prescripción (1:1)
+  createdAt              DateTime              @default(now())
 
-  product Product @relation(fields: [productId], references: [id])
+  product              Product               @relation(fields: [productId], references: [id])
+  prescriptionDelivery PrescriptionDelivery? @relation(fields: [prescriptionDeliveryId], references: [id], onDelete: SetNull)
 }
 
 model Prescription {
-  id               Int    @id @default(autoincrement())
-  recordId         Int
-  productId        Int  // Producto prescrito
-  prescribedBy     Int  // Empleado que prescribe
+  id           Int @id @default(autoincrement())
+  recordId     Int
+  productId    Int // Producto prescrito
+  prescribedBy Int // Empleado que prescribe
 
-  dosage           String  // Ej: "2 veces al día"
-  instructions     String  // Ej: "Después de las comidas"
+  dosage       String // Ej: "2 veces al día"
+  instructions String // Ej: "Después de las comidas"
 
-  prescriptionDate DateTime @default(now())
+  prescriptionDate DateTime  @default(now())
   startDate        DateTime
   endDate          DateTime?
 
-  isActive         Boolean @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  record     MedicalRecord @relation(fields: [recordId], references: [id])
-  product    Product       @relation(fields: [productId], references: [id])
-  doctor     Employee      @relation(fields: [prescribedBy], references: [id])
+  record     MedicalRecord          @relation(fields: [recordId], references: [id])
+  product    Product                @relation(fields: [productId], references: [id])
+  doctor     Employee               @relation(fields: [prescribedBy], references: [id])
   deliveries PrescriptionDelivery[]
 }
 
 model PrescriptionDelivery {
-  id             Int    @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   prescriptionId Int
   deliveredBy    Int
   quantity       Int
+  unitPrice      Decimal  @db.Decimal(8, 2) // ✅ NUEVO: Precio unitario al momento de entrega
+  totalPrice     Decimal  @db.Decimal(10, 2) // ✅ NUEVO: Cantidad x unitPrice
   deliveredAt    DateTime @default(now())
 
-  prescription Prescription @relation(fields: [prescriptionId], references: [id])
-  employee     Employee     @relation(fields: [deliveredBy], references: [id])
+  prescription      Prescription       @relation(fields: [prescriptionId], references: [id])
+  employee          Employee           @relation(fields: [deliveredBy], references: [id])
+  invoiceItem       InvoiceItem? // ✅ NUEVO: Vinculación a factura
+  inventoryMovement InventoryMovement? // ✅ NUEVO: Movimiento de inventario asociado
 }
 
 //////////////////////////////////////////////////////
@@ -521,41 +527,40 @@ model PrescriptionDelivery {
 //////////////////////////////////////////////////////
 
 model Appointment {
-  id          Int      @id @default(autoincrement())
-  patientId   Int
-  employeeId  Int
-  date        DateTime
-  status      AppointmentStatus
-  cost        Decimal @db.Decimal(8,2)
+  id         Int               @id @default(autoincrement())
+  patientId  Int
+  employeeId Int
+  date       DateTime
+  status     AppointmentStatus
+  cost       Decimal           @db.Decimal(8, 2)
 
-  sessionId   Int? @unique // Vincula con sesión realizada
-  session     TherapySession? @relation("AppointmentSession", fields: [sessionId], references: [id], onDelete: SetNull)
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  patient  Patient  @relation(fields: [patientId], references: [id])
-  employee Employee @relation(fields: [employeeId], references: [id])
-  payments Payment[] // ✅ NUEVO: Relación con pagos
-
-}
-
-model Payment {
-  id        Int     @id @default(autoincrement())
-  patientId Int
-  appointmentId Int?    // ✅ NUEVO: Vínculo opcional con cita
-
-  amount    Decimal @db.Decimal(10,2)
-  status    PaymentStatus  // Estado del pago
-  paidAt    DateTime?  // Fecha de pago si está pagado
+  sessionId Int?            @unique // Vincula con sesión realizada
+  session   TherapySession? @relation("AppointmentSession", fields: [sessionId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  patient Patient @relation(fields: [patientId], references: [id])
-  invoice Invoice?
-  appointment Appointment? @relation(fields: [appointmentId], references: [id]) // ✅ NUEVO
+  patient      Patient       @relation(fields: [patientId], references: [id])
+  employee     Employee      @relation(fields: [employeeId], references: [id])
+  payments     Payment[] // Relación con pagos
+  invoiceItems InvoiceItem[] // ✅ NUEVO: Citas cobradas en facturas
+}
 
+model Payment {
+  id            Int  @id @default(autoincrement())
+  patientId     Int
+  appointmentId Int? // ✅ NUEVO: Vínculo opcional con cita
+
+  amount Decimal       @db.Decimal(10, 2)
+  status PaymentStatus // Estado del pago
+  paidAt DateTime? // Fecha de pago si está pagado
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  patient     Patient      @relation(fields: [patientId], references: [id])
+  invoice     Invoice?
+  appointment Appointment? @relation(fields: [appointmentId], references: [id]) // ✅ NUEVO
 }
 
 model Invoice {
@@ -563,12 +568,12 @@ model Invoice {
   number    String @unique
   paymentId Int    @unique
 
-  issueDate DateTime @default(now())  // Fecha de emisión
-  dueDate   DateTime?  // Fecha de vencimiento
+  issueDate DateTime  @default(now()) // Fecha de emisión
+  dueDate   DateTime? // Fecha de vencimiento
 
-  subtotal  Decimal @db.Decimal(10,2)  // Monto antes de impuestos
-  taxes     Decimal @db.Decimal(10,2)  // Impuestos aplicados
-  total     Decimal @db.Decimal(10,2)  // Monto total a pagar
+  subtotal Decimal @db.Decimal(10, 2) // Monto antes de impuestos
+  taxes    Decimal @db.Decimal(10, 2) // Impuestos aplicados
+  total    Decimal @db.Decimal(10, 2) // Monto total a pagar
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -578,16 +583,22 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id          Int    @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   invoiceId   Int
   description String
   quantity    Int
-  unitPrice   Decimal @db.Decimal(10,2)
-  total       Decimal @db.Decimal(10,2)
+  unitPrice   Decimal @db.Decimal(10, 2)
+  total       Decimal @db.Decimal(10, 2)
 
-  createdAt   DateTime @default(now())
+  // ✅ NUEVO: Tipos específicos de items facturados
+  appointmentId          Int? // Cita cobrada
+  prescriptionDeliveryId Int? @unique // Entrega de prescripción (1:1)
 
-  invoice Invoice @relation(fields: [invoiceId], references: [id])
+  createdAt DateTime @default(now())
+
+  invoice              Invoice               @relation(fields: [invoiceId], references: [id])
+  appointment          Appointment?          @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  prescriptionDelivery PrescriptionDelivery? @relation(fields: [prescriptionDeliveryId], references: [id], onDelete: SetNull)
 }
 
 //////////////////////////////////////////////////////
@@ -595,22 +606,22 @@ model InvoiceItem {
 //////////////////////////////////////////////////////
 
 model Payroll {
-  id            Int      @id @default(autoincrement())
-  employeeId    Int
-  periodStart   DateTime
-  periodEnd     DateTime
+  id          Int      @id @default(autoincrement())
+  employeeId  Int
+  periodStart DateTime
+  periodEnd   DateTime
 
-  baseSalary    Decimal @db.Decimal(10,2)
-  bonus         Decimal @db.Decimal(10,2)
-  igss          Decimal @db.Decimal(10,2)
-  deductions    Decimal @db.Decimal(10,2)
-  netSalary     Decimal @db.Decimal(10,2)
+  baseSalary Decimal @db.Decimal(10, 2)
+  bonus      Decimal @db.Decimal(10, 2)
+  igss       Decimal @db.Decimal(10, 2)
+  deductions Decimal @db.Decimal(10, 2)
+  netSalary  Decimal @db.Decimal(10, 2)
 
-  status        PayrollStatus
-  paymentDate   DateTime?
+  status      PayrollStatus
+  paymentDate DateTime?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id])
 }
@@ -620,7 +631,7 @@ model Payroll {
 //////////////////////////////////////////////////////
 
 model AuditLog {
-  id        Int    @id @default(autoincrement())
+  id        Int         @id @default(autoincrement())
   userId    Int?
   action    AuditAction
   entity    String
@@ -628,7 +639,7 @@ model AuditLog {
   oldData   Json?
   newData   Json?
   ip        String?
-  createdAt DateTime @default(now())
+  createdAt DateTime    @default(now())
 
   user User? @relation(fields: [userId], references: [id])
 }

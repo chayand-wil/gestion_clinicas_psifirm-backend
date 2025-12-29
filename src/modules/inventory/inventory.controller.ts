@@ -35,6 +35,12 @@ export class InventoryController {
     return this.service.findAllProducts();
   }
 
+  @Get('low-stock')
+  @ApiOperation({ summary: 'Listar productos en stock mínimo o menor' })
+  findLowStock() {
+    return this.service.findLowStockProducts();
+  }
+
   @Get('products/:id')
   @ApiOperation({ summary: 'Obtener producto por ID' })
   findProduct(@Param('id', ParseIntPipe) id: number) {
@@ -68,5 +74,11 @@ export class InventoryController {
     @Query('productId', new ParseIntPipe({ optional: true })) productId?: number,
   ) {
     return this.service.findMovements(productId);
+  }
+
+  @Get('movements/:id')
+  @ApiOperation({ summary: 'Obtener movimiento por ID' })
+  findMovement(@Param('id', ParseIntPipe) id: number) {
+    return this.service.findMovement(id);
   }
 }

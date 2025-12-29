@@ -133,11 +133,16 @@ export class PrescriptionsService {
         throw new BadRequestException('Stock insuficiente para la entrega');
       }
 
+      const unitPrice = parseFloat(dto.unitPrice);
+      const totalPrice = unitPrice * dto.quantity;
+
       const delivery = await tx.prescriptionDelivery.create({
         data: {
           prescriptionId,
           deliveredBy: dto.deliveredBy,
           quantity: dto.quantity,
+          unitPrice,
+          totalPrice,
           deliveredAt: dto.deliveredAt ? new Date(dto.deliveredAt) : undefined,
         },
       });

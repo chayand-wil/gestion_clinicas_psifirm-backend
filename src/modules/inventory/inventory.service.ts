@@ -21,7 +21,7 @@ export class InventoryService {
       data: {
         code: dto.code,
         name: dto.name,
-        stock: dto.stock,
+        stock: 0,
         minStock: dto.minStock,
         price: new Prisma.Decimal(dto.price),
         isMedication: dto.isMedication,
@@ -33,6 +33,14 @@ export class InventoryService {
     return this.prisma.product.findMany({
       orderBy: { name: 'asc' },
     });
+  }
+
+  async findLowStockProducts() {
+    const products = await this.prisma.product.findMany({
+      orderBy: [{ stock: 'asc' }, { name: 'asc' }],
+    });
+
+    return products.filter((product) => product.stock <= product.minStock);
   }
 
   async findProduct(id: number) {
@@ -61,7 +69,6 @@ export class InventoryService {
       data: {
         code: dto.code ?? undefined,
         name: dto.name ?? undefined,
-        stock: dto.stock ?? undefined,
         minStock: dto.minStock ?? undefined,
         price: dto.price !== undefined ? new Prisma.Decimal(dto.price) : undefined,
         isMedication: dto.isMedication ?? undefined,
@@ -127,5 +134,18 @@ export class InventoryService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async findMovement(id: number) {
+    const movement = await this.prisma.inventoryMovement.findUnique({
+      where: { id },
+      include: { product: true },
+    });
+
+    if (!movement) {
+      throw new NotFoundException(`Movimiento con ID ${id} no encontrado`);
+    }
+
+    return movement;
   }
 }

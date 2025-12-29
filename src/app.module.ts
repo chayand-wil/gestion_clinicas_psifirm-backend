@@ -12,9 +12,11 @@ import { MedicalRecordsModule } from './modules/medical-records/medical-records.
 import { BigIntSerializerInterceptor } from './common/interceptors/bigint-serializer.interceptor';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { PrescriptionsModule } from './modules/prescriptions/prescriptions.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, SpecialtyAreaModule, RolesModule, AppointmentsModule, EmployeeScheduleModule, MedicalRecordsModule, InventoryModule, PrescriptionsModule],
+  imports: [PrismaModule, AuthModule, SpecialtyAreaModule, RolesModule, AppointmentsModule, EmployeeScheduleModule, MedicalRecordsModule, InventoryModule, PrescriptionsModule, PaymentsModule, InvoicesModule],
   controllers: [
     AppController,
   ],

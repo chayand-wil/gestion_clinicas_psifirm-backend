@@ -12,11 +12,6 @@ export class CreateProductDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ example: 100, description: 'Stock actual' })
-  @IsInt()
-  @Min(0)
-  stock: number;
-
   @ApiProperty({ example: 10, description: 'Stock mínimo recomendado' })
   @IsInt()
   @Min(0)
